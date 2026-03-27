@@ -1,6 +1,8 @@
+import { UserRole } from '../../../common/domain/enums/user-role.enum';
+
 export interface MockUser {
   id: string;
   email: string;
-  role: string;
+  role: UserRole;
   password: string;
 }

@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'crypto';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { JwtPayload } from '../../../common/domain/interfaces/jwt-payload.interface';
@@ -9,6 +9,10 @@ import { RefreshTokenDto } from '../../../common/domain/dto/refresh-token.dto';
 import { RedisService } from '../../../redis/redis.service';
 import { TokenPairDto } from '../../domain/dto/token-pair.dto';
 import { MockUser } from '../../domain/interfaces/mock-user.interface';
+import { CreateUserDto } from '../../domain/dto/create-user.dto';
+import { UpdateUserRoleDto } from '../../domain/dto/update-user-role.dto';
+import { ResetPasswordDto } from '../../domain/dto/reset-password.dto';
+import { UserRole } from '../../../common/domain/enums/user-role.enum';
 
 @Injectable()
 export class AuthService {
@@ -18,8 +22,14 @@ export class AuthService {
     {
       id: 'usr-001',
       email: 'admin@example.com',
-      role: 'admin',
+      role: UserRole.ADMIN,
       password: 'P@ssw0rd!',
+    },
+    {
+      id: 'usr-002',
+      email: 'manager@example.com',
+      role: UserRole.MANAGER,
+      password: 'Manager123!',
     },
   ];
 
@@ -72,6 +82,62 @@ export class AuthService {
     ]);
 
     return { message: 'Sesion cerrada correctamente' };
+  }
+
+  // ADMIN METHODS: User and Role Management
+
+  async createUser(dto: CreateUserDto): Promise<{ id: string; email: string; role: UserRole }> {
+    const exists = this.mockUsers.find((u) => u.email === dto.email);
+    if (exists) {
+      throw new ConflictException('El usuario ya existe');
+    }
+
+    const newUser: MockUser = {
+      id: `usr-${Date.now()}`,
+      email: dto.email,
+      role: dto.role,
+      password: dto.password,
+    };
+
+    this.mockUsers.push(newUser);
+    return { id: newUser.id, email: newUser.email, role: newUser.role };
+  }
+
+  async getAllUsers(): Promise<{ id: string; email: string; role: UserRole }[]> {
+    return this.mockUsers.map((u) => ({ id: u.id, email: u.email, role: u.role }));
+  }
+
+  async updateUserRole(dto: UpdateUserRoleDto): Promise<{ message: string }> {
+    const user = this.mockUsers.find((u) => u.email === dto.email);
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    if (dto.role) {
+      user.role = dto.role;
+    }
+
+    return { message: `Rol actualizado a ${dto.role}` };
+  }
+
+  async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
+    const user = this.mockUsers.find((u) => u.email === dto.email);
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    user.password = dto.newPassword;
+    return { message: 'Contraseña reiniciada correctamente' };
+  }
+
+  async deleteUser(email: string): Promise<{ message: string }> {
+    const idx = this.mockUsers.findIndex((u) => u.email === email);
+    if (idx === -1) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    this.mockUsers.splice(idx, 1);
+    return { message: 'Usuario eliminado correctamente' };
   }
 
   private validateCredentials(email: string, password: string): MockUser {
