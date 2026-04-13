@@ -8,35 +8,23 @@ import { LogoutDto } from '../../../common/domain/dto/logout.dto';
 import { RefreshTokenDto } from '../../../common/domain/dto/refresh-token.dto';
 import { RedisService } from '../../../redis/redis.service';
 import { TokenPairDto } from '../../domain/dto/token-pair.dto';
-import { MockUser } from '../../domain/interfaces/mock-user.interface';
+import { UserWithPassword } from '../../domain/interfaces/user.interface';
 import { CreateUserDto } from '../../domain/dto/create-user.dto';
 import { UpdateUserRoleDto } from '../../domain/dto/update-user-role.dto';
 import { ResetPasswordDto } from '../../domain/dto/reset-password.dto';
 import { UserRole } from '../../../common/domain/enums/user-role.enum';
+import { InMemoryUserDataSource } from '../../infrastructure/persistence/in-memory-user.datasource';
 
 @Injectable()
 export class AuthService {
   private readonly sessionPrefix = 'auth:session:user:';
   private readonly refreshBlacklistPrefix = 'auth:blacklist:refresh:';
-  private readonly mockUsers: MockUser[] = [
-    {
-      id: 'usr-001',
-      email: 'admin@example.com',
-      role: UserRole.ADMIN,
-      password: '1234',
-    },
-    {
-      id: 'usr-002',
-      email: 'manager@example.com',
-      role: UserRole.MANAGER,
-      password: '1234',
-    },
-  ];
 
   constructor(
     private readonly jwtService: JwtService,
     private readonly redisService: RedisService,
     private readonly configService: ConfigService,
+    private readonly userDataSource: InMemoryUserDataSource,
   ) {}
 
   async login(dto: LoginDto): Promise<TokenPairDto> {
@@ -61,7 +49,7 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token no coincide con la sesión activa');
     }
 
-    const user = this.mockUsers.find((item) => item.id === payload.sub);
+    const user = this.userDataSource.findById(payload.sub);
     if (!user) {
       throw new UnauthorizedException('Usuario no válido');
     }
@@ -87,28 +75,31 @@ export class AuthService {
   // ADMIN METHODS: User and Role Management
 
   async createUser(dto: CreateUserDto): Promise<{ id: string; email: string; role: UserRole }> {
-    const exists = this.mockUsers.find((u) => u.email === dto.email);
+    const exists = this.userDataSource.findByEmail(dto.email);
     if (exists) {
       throw new ConflictException('El usuario ya existe');
     }
 
-    const newUser: MockUser = {
+    const newUser: UserWithPassword = {
       id: `usr-${Date.now()}`,
       email: dto.email,
       role: dto.role,
       password: dto.password,
+      firstName: dto.email.split('@')[0],
+      lastName: 'Usuario',
+      documentNumber: `${Date.now()}`,
     };
 
-    this.mockUsers.push(newUser);
+    this.userDataSource.create(newUser);
     return { id: newUser.id, email: newUser.email, role: newUser.role };
   }
 
   async getAllUsers(): Promise<{ id: string; email: string; role: UserRole }[]> {
-    return this.mockUsers.map((u) => ({ id: u.id, email: u.email, role: u.role }));
+    return this.userDataSource.findAll().map((u) => ({ id: u.id, email: u.email, role: u.role }));
   }
 
   async updateUserRole(dto: UpdateUserRoleDto): Promise<{ message: string }> {
-    const user = this.mockUsers.find((u) => u.email === dto.email);
+    const user = this.userDataSource.findByEmail(dto.email);
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
     }
@@ -121,7 +112,7 @@ export class AuthService {
   }
 
   async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
-    const user = this.mockUsers.find((u) => u.email === dto.email);
+    const user = this.userDataSource.findByEmail(dto.email);
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
     }
@@ -131,17 +122,16 @@ export class AuthService {
   }
 
   async deleteUser(email: string): Promise<{ message: string }> {
-    const idx = this.mockUsers.findIndex((u) => u.email === email);
-    if (idx === -1) {
+    const deleted = this.userDataSource.deleteByEmail(email);
+    if (!deleted) {
       throw new NotFoundException('Usuario no encontrado');
     }
 
-    this.mockUsers.splice(idx, 1);
     return { message: 'Usuario eliminado correctamente' };
   }
 
-  private validateCredentials(email: string, password: string): MockUser {
-    const user = this.mockUsers.find((candidate) => candidate.email === email);
+  private validateCredentials(email: string, password: string): UserWithPassword {
+    const user = this.userDataSource.findByEmail(email);
     if (!user || user.password !== password) {
       throw new UnauthorizedException('Credenciales invalidas');
     }
@@ -149,7 +139,7 @@ export class AuthService {
     return user;
   }
 
-  private async issueTokenPair(user: MockUser): Promise<TokenPairDto> {
+  private async issueTokenPair(user: UserWithPassword): Promise<TokenPairDto> {
     const accessSecret = this.configService.getOrThrow<string>('JWT_ACCESS_SECRET');
     const refreshSecret = this.configService.getOrThrow<string>('JWT_REFRESH_SECRET');
     const accessTtl = this.configService.get<string>('JWT_ACCESS_TTL', '15m');

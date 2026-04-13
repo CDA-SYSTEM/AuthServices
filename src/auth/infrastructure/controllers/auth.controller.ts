@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, Get, Patch, Delete, UseGuards } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Post, Get, Patch, Delete, UseGuards, Param, Query } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { LoginDto } from '../../../common/domain/dto/login.dto';
 import { LogoutDto } from '../../../common/domain/dto/logout.dto';
@@ -11,10 +11,20 @@ import { TokenPairDto } from '../../domain/dto/token-pair.dto';
 import { Roles } from '../../../common/infrastructure/decorators/roles.decorator';
 import { RolesGuard } from '../../../common/infrastructure/guards/roles.guard';
 import { UserRole } from '../../../common/domain/enums/user-role.enum';
+import { FindUserByIdUseCase } from '../../application/use-cases/find-user-by-id.use-case';
+import { SearchUsersUseCase } from '../../application/use-cases/search-users.use-case';
+import { ValidateTokenResult, ValidateTokenUseCase } from '../../application/use-cases/validate-token.use-case';
+import { ValidateTokenDto } from '../../domain/dto/validate-token.dto';
+import { User } from '../../domain/interfaces/user.interface';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly findUserByIdUseCase: FindUserByIdUseCase,
+    private readonly searchUsersUseCase: SearchUsersUseCase,
+    private readonly validateTokenUseCase: ValidateTokenUseCase,
+  ) {}
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
@@ -32,6 +42,26 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   logout(@Body() dto: LogoutDto): Promise<{ message: string }> {
     return this.authService.logout(dto);
+  }
+
+  @Get('user/:id')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  getUserById(@Param('id') id: string): Promise<User> {
+    return this.findUserByIdUseCase.execute(id);
+  }
+
+  @Get('users/search')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  searchUsers(@Query('q') q: string): Promise<User[]> {
+    return this.searchUsersUseCase.execute(q ?? '');
+  }
+
+  @Post('validate-token')
+  @HttpCode(HttpStatus.OK)
+  validateToken(@Body() dto: ValidateTokenDto): Promise<ValidateTokenResult> {
+    return this.validateTokenUseCase.execute(dto.token);
   }
 
   // ADMIN ENDPOINTS: User and Role Management
@@ -71,7 +101,7 @@ export class AuthController {
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.OK)
-  deleteUser(@Body() dto: { email: string }): Promise<{ message: string }> {
-    return this.authService.deleteUser(dto.email);
+  deleteUser(@Param('email') email: string): Promise<{ message: string }> {
+    return this.authService.deleteUser(email);
   }
 }
