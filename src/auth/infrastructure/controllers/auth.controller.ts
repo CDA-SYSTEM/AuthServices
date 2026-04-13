@@ -64,6 +64,26 @@ export class AuthController {
     return this.validateTokenUseCase.execute(dto.token);
   }
 
+  @Get('modules/ntc-5375/checklists')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.INSPECTOR)
+  ntc5375ChecklistAccess(): { module: string; access: boolean } {
+    return {
+      module: 'ntc-5375-checklists',
+      access: true,
+    };
+  }
+
+  @Get('modules/recepcion')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.OPERARIO)
+  recepcionAccess(): { module: string; access: boolean } {
+    return {
+      module: 'recepcion',
+      access: true,
+    };
+  }
+
   // ADMIN ENDPOINTS: User and Role Management
 
   @Post('users')

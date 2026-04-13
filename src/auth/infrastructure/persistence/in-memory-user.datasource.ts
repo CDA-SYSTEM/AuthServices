@@ -23,6 +23,24 @@ export class InMemoryUserDataSource {
       lastName: 'Manager',
       documentNumber: '1002002002',
     },
+    {
+      id: 'usr-003',
+      email: 'inspector@example.com',
+      role: UserRole.INSPECTOR,
+      password: '1234',
+      firstName: 'Ines',
+      lastName: 'Inspector',
+      documentNumber: '1003003003',
+    },
+    {
+      id: 'usr-004',
+      email: 'operario@example.com',
+      role: UserRole.OPERARIO,
+      password: '1234',
+      firstName: 'Oscar',
+      lastName: 'Operario',
+      documentNumber: '1004004004',
+    },
   ];
 
   findById(id: string): UserWithPassword | undefined {

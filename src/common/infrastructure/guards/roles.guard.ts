@@ -20,15 +20,18 @@ export class RolesGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest();
     const user = request.user as JwtPayload;
+    const userRoles = this.extractUserRoles(user);
 
-    if (!user || !user.role) {
+    if (userRoles.length === 0) {
       throw new ForbiddenException('Usuario no autenticado o sin rol');
     }
 
-    const userRoleHierarchy = ROLE_HIERARCHY[user.role as UserRole] || 0;
-    const hasRequiredRole = requiredRoles.some(
-      (role) => ROLE_HIERARCHY[role] <= userRoleHierarchy,
+    const highestUserRoleLevel = Math.max(
+      ...userRoles.map((role) => ROLE_HIERARCHY[role] || 0),
+      0,
     );
+
+    const hasRequiredRole = requiredRoles.some((role) => ROLE_HIERARCHY[role] <= highestUserRoleLevel);
 
     if (!hasRequiredRole) {
       throw new ForbiddenException(
@@ -37,5 +40,18 @@ export class RolesGuard implements CanActivate {
     }
 
     return true;
+  }
+
+  private extractUserRoles(user?: JwtPayload): UserRole[] {
+    if (!user) {
+      return [];
+    }
+
+    const roleCandidates = [
+      ...(Array.isArray(user.roles) ? user.roles : []),
+      ...(user.role ? [user.role] : []),
+    ];
+
+    return roleCandidates.filter((role): role is UserRole => Object.values(UserRole).includes(role as UserRole));
   }
 }

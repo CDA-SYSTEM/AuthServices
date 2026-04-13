@@ -1,13 +1,13 @@
 {
   "info": {
     "_postman_id": "9c84bd2e-c880-44a3-9f9b-fdc80f6b6436",
-    "name": "Auth Service",
-    "description": "Coleccion de pruebas para el microservicio AUTH (NestJS + Redis).",
+    "name": "Auth Service - RBAC Functional",
+    "description": "Coleccion minima para validacion funcional de RBAC y validate-token.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "01 - Login",
+      "name": "01 - Login Inspector",
       "request": {
         "method": "POST",
         "header": [
@@ -18,7 +18,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+          "raw": "{\n  \"email\": \"{{inspectorEmail}}\",\n  \"password\": \"{{inspectorPassword}}\"\n}"
         },
         "url": {
           "raw": "{{baseUrl}}/auth/login",
@@ -42,20 +42,20 @@
               "});",
               "",
               "const json = pm.response.json();",
-              "pm.test('Response has accessToken and refreshToken', function () {",
+              "pm.test('Inspector receives tokens', function () {",
               "  pm.expect(json.accessToken).to.be.a('string').and.not.empty;",
               "  pm.expect(json.refreshToken).to.be.a('string').and.not.empty;",
               "});",
               "",
-              "pm.environment.set('accessToken', json.accessToken);",
-              "pm.environment.set('refreshToken', json.refreshToken);"
+              "pm.collectionVariables.set('inspectorAccessToken', json.accessToken);",
+              "pm.collectionVariables.set('inspectorRefreshToken', json.refreshToken);"
             ]
           }
         }
       ]
     },
     {
-      "name": "02 - Refresh",
+      "name": "02 - Login Operario",
       "request": {
         "method": "POST",
         "header": [
@@ -66,16 +66,16 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+          "raw": "{\n  \"email\": \"{{operarioEmail}}\",\n  \"password\": \"{{operarioPassword}}\"\n}"
         },
         "url": {
-          "raw": "{{baseUrl}}/auth/refresh",
+          "raw": "{{baseUrl}}/auth/login",
           "host": [
             "{{baseUrl}}"
           ],
           "path": [
             "auth",
-            "refresh"
+            "login"
           ]
         }
       },
@@ -90,20 +90,20 @@
               "});",
               "",
               "const json = pm.response.json();",
-              "pm.test('Response has rotated tokens', function () {",
+              "pm.test('Operario receives tokens', function () {",
               "  pm.expect(json.accessToken).to.be.a('string').and.not.empty;",
               "  pm.expect(json.refreshToken).to.be.a('string').and.not.empty;",
               "});",
               "",
-              "pm.environment.set('accessToken', json.accessToken);",
-              "pm.environment.set('refreshToken', json.refreshToken);"
+              "pm.collectionVariables.set('operarioAccessToken', json.accessToken);",
+              "pm.collectionVariables.set('operarioRefreshToken', json.refreshToken);"
             ]
           }
         }
       ]
     },
     {
-      "name": "03 - Logout",
+      "name": "03 - Validate Inspector Token",
       "request": {
         "method": "POST",
         "header": [
@@ -114,16 +114,16 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+          "raw": "{\n  \"token\": \"{{inspectorAccessToken}}\"\n}"
         },
         "url": {
-          "raw": "{{baseUrl}}/auth/logout",
+          "raw": "{{baseUrl}}/auth/validate-token",
           "host": [
             "{{baseUrl}}"
           ],
           "path": [
             "auth",
-            "logout"
+            "validate-token"
           ]
         }
       },
@@ -138,8 +138,11 @@
               "});",
               "",
               "const json = pm.response.json();",
-              "pm.test('Logout message exists', function () {",
-              "  pm.expect(json.message).to.be.a('string').and.not.empty;",
+              "pm.test('Validate-token returns expected contract', function () {",
+              "  pm.expect(json.valid).to.equal(true);",
+              "  pm.expect(Array.isArray(json.roles)).to.be.true;",
+              "  pm.expect(json.roles).to.include('inspector');",
+              "  pm.expect(json.userId).to.be.a('string').and.not.empty;",
               "});"
             ]
           }
@@ -147,7 +150,129 @@
       ]
     },
     {
-      "name": "04 - Refresh After Logout (Expected 401)",
+      "name": "04 - NTC 5375 Access As Inspector (Allowed)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{inspectorAccessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/modules/ntc-5375/checklists",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "modules",
+            "ntc-5375",
+            "checklists"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "const json = pm.response.json();",
+              "pm.test('Inspector can access NTC 5375 module', function () {",
+              "  pm.expect(json.module).to.equal('ntc-5375-checklists');",
+              "  pm.expect(json.access).to.equal(true);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - NTC 5375 Access As Operario (Forbidden)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{operarioAccessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/modules/ntc-5375/checklists",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "modules",
+            "ntc-5375",
+            "checklists"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 403', function () {",
+              "  pm.response.to.have.status(403);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - Recepcion Access As Operario (Allowed)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{operarioAccessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/modules/recepcion",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "modules",
+            "recepcion"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "const json = pm.response.json();",
+              "pm.test('Operario can access recepcion module', function () {",
+              "  pm.expect(json.module).to.equal('recepcion');",
+              "  pm.expect(json.access).to.equal(true);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 - Validate Token (Invalid, Expected 401)",
       "request": {
         "method": "POST",
         "header": [
@@ -158,16 +283,16 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+          "raw": "{\n  \"token\": \"invalid.token.value\"\n}"
         },
         "url": {
-          "raw": "{{baseUrl}}/auth/refresh",
+          "raw": "{{baseUrl}}/auth/validate-token",
           "host": [
             "{{baseUrl}}"
           ],
           "path": [
             "auth",
-            "refresh"
+            "validate-token"
           ]
         }
       },
@@ -177,7 +302,7 @@
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test('Status code is 401 after logout', function () {",
+              "pm.test('Status code is 401', function () {",
               "  pm.response.to.have.status(401);",
               "});"
             ]
@@ -192,12 +317,36 @@
       "value": "http://localhost:3001/api"
     },
     {
-      "key": "email",
-      "value": "admin@example.com"
+      "key": "inspectorEmail",
+      "value": "inspector@example.com"
     },
     {
-      "key": "password",
+      "key": "inspectorPassword",
       "value": "1234"
+    },
+    {
+      "key": "operarioEmail",
+      "value": "operario@example.com"
+    },
+    {
+      "key": "operarioPassword",
+      "value": "1234"
+    },
+    {
+      "key": "inspectorAccessToken",
+      "value": ""
+    },
+    {
+      "key": "inspectorRefreshToken",
+      "value": ""
+    },
+    {
+      "key": "operarioAccessToken",
+      "value": ""
+    },
+    {
+      "key": "operarioRefreshToken",
+      "value": ""
     }
   ]
 }

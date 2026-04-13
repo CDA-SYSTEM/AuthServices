@@ -29,10 +29,11 @@ export class ValidateTokenUseCase {
     }
 
     const payload = await this.verifyAccessToken(token);
+    const roles = this.extractRoles(payload);
 
     return {
       valid: true,
-      roles: [payload.role],
+      roles,
       userId: payload.sub,
     };
   }
@@ -64,5 +65,19 @@ export class ValidateTokenUseCase {
     ]);
 
     return refreshBlacklisted || accessBlacklisted;
+  }
+
+  private extractRoles(payload: JwtPayload): string[] {
+    const candidates = [
+      ...(Array.isArray(payload.roles) ? payload.roles : []),
+      ...(payload.role ? [payload.role] : []),
+    ].filter(Boolean);
+
+    const uniqueRoles = Array.from(new Set(candidates));
+    if (uniqueRoles.length === 0) {
+      throw new UnauthorizedException('Token sin roles asociados');
+    }
+
+    return uniqueRoles;
   }
 }
