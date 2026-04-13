@@ -530,10 +530,9 @@ docker exec redis-auth redis-cli FLUSHALL
 
 ## 📝 Licencia
 
-UNLICENSED
+Uso academico interno para el proyecto CDA Putumayo.
+Todos los derechos reservados.
 
 ---
 
 **Última actualización:** Marzo 2026
-
-**Autor:** Arquitecto de Software Senior - NestJS/Microservicios

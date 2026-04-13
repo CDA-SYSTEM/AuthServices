@@ -23,13 +23,13 @@ export class AuthService {
       id: 'usr-001',
       email: 'admin@example.com',
       role: UserRole.ADMIN,
-      password: 'P@ssw0rd!',
+      password: '1234',
     },
     {
       id: 'usr-002',
       email: 'manager@example.com',
       role: UserRole.MANAGER,
-      password: 'Manager123!',
+      password: '1234',
     },
   ];
 
