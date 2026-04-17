@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'crypto';
-import { Injectable, UnauthorizedException, ConflictException, NotFoundException } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
+import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { JwtPayload } from '../../../common/domain/interfaces/jwt-payload.interface';
@@ -8,12 +9,8 @@ import { LogoutDto } from '../../../common/domain/dto/logout.dto';
 import { RefreshTokenDto } from '../../../common/domain/dto/refresh-token.dto';
 import { RedisService } from '../../../redis/redis.service';
 import { TokenPairDto } from '../../domain/dto/token-pair.dto';
-import { UserWithPassword } from '../../domain/interfaces/user.interface';
-import { CreateUserDto } from '../../domain/dto/create-user.dto';
-import { UpdateUserRoleDto } from '../../domain/dto/update-user-role.dto';
-import { ResetPasswordDto } from '../../domain/dto/reset-password.dto';
-import { UserRole } from '../../../common/domain/enums/user-role.enum';
-import { InMemoryUserDataSource } from '../../infrastructure/persistence/in-memory-user.datasource';
+import { AuthAccount, AuthAccountWithPassword } from '../../domain/interfaces/auth-account.interface';
+import { AUTH_ACCOUNT_REPOSITORY, AuthAccountRepositoryPort } from '../../domain/ports/auth-account-repository.port';
 
 @Injectable()
 export class AuthService {
@@ -24,11 +21,12 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly redisService: RedisService,
     private readonly configService: ConfigService,
-    private readonly userDataSource: InMemoryUserDataSource,
+    @Inject(AUTH_ACCOUNT_REPOSITORY)
+    private readonly authAccountRepository: AuthAccountRepositoryPort,
   ) {}
 
   async login(dto: LoginDto): Promise<TokenPairDto> {
-    const user = this.validateCredentials(dto.email, dto.password);
+    const user = await this.validateCredentials(dto.email, dto.password);
     const tokens = await this.issueTokenPair(user);
 
     await this.saveSession(user.id, tokens.refreshToken);
@@ -49,7 +47,7 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token no coincide con la sesión activa');
     }
 
-    const user = this.userDataSource.findById(payload.sub);
+    const user = await this.authAccountRepository.findById(payload.sub);
     if (!user) {
       throw new UnauthorizedException('Usuario no válido');
     }
@@ -72,74 +70,21 @@ export class AuthService {
     return { message: 'Sesion cerrada correctamente' };
   }
 
-  // ADMIN METHODS: User and Role Management
-
-  async createUser(dto: CreateUserDto): Promise<{ id: string; email: string; role: UserRole }> {
-    const exists = this.userDataSource.findByEmail(dto.email);
-    if (exists) {
-      throw new ConflictException('El usuario ya existe');
-    }
-
-    const newUser: UserWithPassword = {
-      id: `usr-${Date.now()}`,
-      email: dto.email,
-      role: dto.role,
-      password: dto.password,
-      firstName: dto.email.split('@')[0],
-      lastName: 'Usuario',
-      documentNumber: `${Date.now()}`,
-    };
-
-    this.userDataSource.create(newUser);
-    return { id: newUser.id, email: newUser.email, role: newUser.role };
-  }
-
-  async getAllUsers(): Promise<{ id: string; email: string; role: UserRole }[]> {
-    return this.userDataSource.findAll().map((u) => ({ id: u.id, email: u.email, role: u.role }));
-  }
-
-  async updateUserRole(dto: UpdateUserRoleDto): Promise<{ message: string }> {
-    const user = this.userDataSource.findByEmail(dto.email);
+  private async validateCredentials(email: string, password: string): Promise<AuthAccountWithPassword> {
+    const user = await this.authAccountRepository.findByEmail(email);
     if (!user) {
-      throw new NotFoundException('Usuario no encontrado');
+      throw new UnauthorizedException('Credenciales invalidas');
     }
 
-    if (dto.role) {
-      user.role = dto.role;
-    }
-
-    return { message: `Rol actualizado a ${dto.role}` };
-  }
-
-  async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
-    const user = this.userDataSource.findByEmail(dto.email);
-    if (!user) {
-      throw new NotFoundException('Usuario no encontrado');
-    }
-
-    user.password = dto.newPassword;
-    return { message: 'Contraseña reiniciada correctamente' };
-  }
-
-  async deleteUser(email: string): Promise<{ message: string }> {
-    const deleted = this.userDataSource.deleteByEmail(email);
-    if (!deleted) {
-      throw new NotFoundException('Usuario no encontrado');
-    }
-
-    return { message: 'Usuario eliminado correctamente' };
-  }
-
-  private validateCredentials(email: string, password: string): UserWithPassword {
-    const user = this.userDataSource.findByEmail(email);
-    if (!user || user.password !== password) {
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
       throw new UnauthorizedException('Credenciales invalidas');
     }
 
     return user;
   }
 
-  private async issueTokenPair(user: UserWithPassword): Promise<TokenPairDto> {
+  private async issueTokenPair(user: AuthAccount | AuthAccountWithPassword): Promise<TokenPairDto> {
     const accessSecret = this.configService.getOrThrow<string>('JWT_ACCESS_SECRET');
     const refreshSecret = this.configService.getOrThrow<string>('JWT_REFRESH_SECRET');
     const accessTtl = this.configService.get<string>('JWT_ACCESS_TTL', '15m');

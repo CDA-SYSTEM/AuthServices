@@ -1,14 +1,16 @@
 import { UserRole } from '../../../common/domain/enums/user-role.enum';
+import { IdentificationType } from '../../../common/domain/enums/identification-type.enum';
 
 export interface User {
   id: string;
-  email: string;
-  role: UserRole;
+  identificationType: IdentificationType;
+  identificationNumber: string;
   firstName: string;
   lastName: string;
-  documentNumber: string;
-}
-
-export interface UserWithPassword extends User {
-  password: string;
+  phoneNumber: string;
+  email: string;
+  role: UserRole;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }

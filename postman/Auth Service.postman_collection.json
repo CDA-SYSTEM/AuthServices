@@ -1,13 +1,510 @@
 {
   "info": {
     "_postman_id": "9c84bd2e-c880-44a3-9f9b-fdc80f6b6436",
-    "name": "Auth Service - RBAC Functional",
-    "description": "Coleccion minima para validacion funcional de RBAC y validate-token.",
+    "name": "Auth Service - CRUD Functional",
+    "description": "Coleccion minima para validar CRUD de empleados (OPERARIO/INSPECTOR) con ADMIN y MANAGER.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "01 - Login Inspector",
+      "name": "01 - Login Admin",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Admin login returns tokens', function () {",
+              "  pm.expect(json.accessToken).to.be.a('string').and.not.empty;",
+              "  pm.expect(json.refreshToken).to.be.a('string').and.not.empty;",
+              "});",
+              "pm.collectionVariables.set('adminAccessToken', json.accessToken);",
+              "pm.collectionVariables.set('adminRefreshToken', json.refreshToken);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Login Manager",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{managerEmail}}\",\n  \"password\": \"{{managerPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Manager login returns tokens', function () {",
+              "  pm.expect(json.accessToken).to.be.a('string').and.not.empty;",
+              "  pm.expect(json.refreshToken).to.be.a('string').and.not.empty;",
+              "});",
+              "pm.collectionVariables.set('managerAccessToken', json.accessToken);",
+              "pm.collectionVariables.set('managerRefreshToken', json.refreshToken);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Register Inspector (ADMIN)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"identificationType\": \"cc\",\n  \"identificationNumber\": \"{{inspectorIdentificationNumber}}\",\n  \"firstName\": \"Laura\",\n  \"lastName\": \"Inspectora\",\n  \"phoneNumber\": \"{{inspectorPhoneNumber}}\",\n  \"email\": \"{{inspectorEmail}}\",\n  \"password\": \"{{inspectorPassword}}\",\n  \"role\": \"inspector\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/register",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "register"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const suffix = Date.now().toString();",
+              "if (!pm.collectionVariables.get('inspectorIdentificationNumber')) {",
+              "  pm.collectionVariables.set('inspectorIdentificationNumber', `11${suffix.slice(-8)}`);",
+              "}",
+              "if (!pm.collectionVariables.get('inspectorPhoneNumber')) {",
+              "  pm.collectionVariables.set('inspectorPhoneNumber', `300${suffix.slice(-7)}`);",
+              "}",
+              "if (!pm.collectionVariables.get('inspectorEmail')) {",
+              "  pm.collectionVariables.set('inspectorEmail', `inspector.${suffix}@example.com`);",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 201', function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Inspector created', function () {",
+              "  pm.expect(json.id).to.be.a('string').and.not.empty;",
+              "  pm.expect(json.role).to.equal('inspector');",
+              "});",
+              "pm.collectionVariables.set('inspectorId', json.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Register Operario (ADMIN)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"identificationType\": \"cc\",\n  \"identificationNumber\": \"{{operarioIdentificationNumber}}\",\n  \"firstName\": \"Carlos\",\n  \"lastName\": \"Operario\",\n  \"phoneNumber\": \"{{operarioPhoneNumber}}\",\n  \"email\": \"{{operarioEmail}}\",\n  \"password\": \"{{operarioPassword}}\",\n  \"role\": \"operario\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/register",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "register"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const suffix = Date.now().toString();",
+              "if (!pm.collectionVariables.get('operarioIdentificationNumber')) {",
+              "  pm.collectionVariables.set('operarioIdentificationNumber', `22${suffix.slice(-8)}`);",
+              "}",
+              "if (!pm.collectionVariables.get('operarioPhoneNumber')) {",
+              "  pm.collectionVariables.set('operarioPhoneNumber', `301${suffix.slice(-7)}`);",
+              "}",
+              "if (!pm.collectionVariables.get('operarioEmail')) {",
+              "  pm.collectionVariables.set('operarioEmail', `operario.${suffix}@example.com`);",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 201', function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Operario created', function () {",
+              "  pm.expect(json.id).to.be.a('string').and.not.empty;",
+              "  pm.expect(json.role).to.equal('operario');",
+              "});",
+              "pm.collectionVariables.set('operarioId', json.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - List Users (ADMIN/MANAGER)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/users?role=operario",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "users"
+          ],
+          "query": [
+            {
+              "key": "role",
+              "value": "operario"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Returns array', function () {",
+              "  pm.expect(Array.isArray(json)).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - Get User By ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/users/{{operarioId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "users",
+            "{{operarioId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Returns selected user', function () {",
+              "  pm.expect(json.id).to.equal(pm.collectionVariables.get('operarioId'));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 - Update User (ADMIN)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"lastName\": \"Operario Actualizado\",\n  \"phoneNumber\": \"3009990001\",\n  \"role\": \"inspector\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/users/{{operarioId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "users",
+            "{{operarioId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('User updated', function () {",
+              "  pm.expect(json.lastName).to.equal('Operario Actualizado');",
+              "  pm.expect(json.role).to.equal('inspector');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 - Validate Admin Token",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"token\": \"{{adminAccessToken}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/validate-token",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "validate-token"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Token validation contract is correct', function () {",
+              "  pm.expect(json.valid).to.equal(true);",
+              "  pm.expect(Array.isArray(json.roles)).to.be.true;",
+              "  pm.expect(json.userId).to.be.a('string').and.not.empty;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 - Refresh Admin Token",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refreshToken\": \"{{adminRefreshToken}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/refresh",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "refresh"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Refresh returns new tokens', function () {",
+              "  pm.expect(json.accessToken).to.be.a('string').and.not.empty;",
+              "  pm.expect(json.refreshToken).to.be.a('string').and.not.empty;",
+              "});",
+              "pm.collectionVariables.set('adminAccessToken', json.accessToken);",
+              "pm.collectionVariables.set('adminRefreshToken', json.refreshToken);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 - Search Users (ADMIN)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/users/search?q=operario",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "users",
+            "search"
+          ],
+          "query": [
+            {
+              "key": "q",
+              "value": "operario"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Search returns array', function () {",
+              "  pm.expect(Array.isArray(json)).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 - Login Inspector (Created User)",
       "request": {
         "method": "POST",
         "header": [
@@ -40,13 +537,11 @@
               "pm.test('Status code is 200', function () {",
               "  pm.response.to.have.status(200);",
               "});",
-              "",
               "const json = pm.response.json();",
-              "pm.test('Inspector receives tokens', function () {",
+              "pm.test('Inspector login returns tokens', function () {",
               "  pm.expect(json.accessToken).to.be.a('string').and.not.empty;",
               "  pm.expect(json.refreshToken).to.be.a('string').and.not.empty;",
               "});",
-              "",
               "pm.collectionVariables.set('inspectorAccessToken', json.accessToken);",
               "pm.collectionVariables.set('inspectorRefreshToken', json.refreshToken);"
             ]
@@ -55,7 +550,49 @@
       ]
     },
     {
-      "name": "02 - Login Operario",
+      "name": "12 - NTC 5375 Access (INSPECTOR)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{inspectorAccessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/modules/ntc-5375/checklists",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "modules",
+            "ntc-5375",
+            "checklists"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('NTC route contract', function () {",
+              "  pm.expect(json.module).to.equal('ntc-5375-checklists');",
+              "  pm.expect(json.access).to.equal(true);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13 - Login Operario (Created User)",
       "request": {
         "method": "POST",
         "header": [
@@ -88,13 +625,11 @@
               "pm.test('Status code is 200', function () {",
               "  pm.response.to.have.status(200);",
               "});",
-              "",
               "const json = pm.response.json();",
-              "pm.test('Operario receives tokens', function () {",
+              "pm.test('Operario login returns tokens', function () {",
               "  pm.expect(json.accessToken).to.be.a('string').and.not.empty;",
               "  pm.expect(json.refreshToken).to.be.a('string').and.not.empty;",
               "});",
-              "",
               "pm.collectionVariables.set('operarioAccessToken', json.accessToken);",
               "pm.collectionVariables.set('operarioRefreshToken', json.refreshToken);"
             ]
@@ -103,134 +638,7 @@
       ]
     },
     {
-      "name": "03 - Validate Inspector Token",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"token\": \"{{inspectorAccessToken}}\"\n}"
-        },
-        "url": {
-          "raw": "{{baseUrl}}/auth/validate-token",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "auth",
-            "validate-token"
-          ]
-        }
-      },
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test('Status code is 200', function () {",
-              "  pm.response.to.have.status(200);",
-              "});",
-              "",
-              "const json = pm.response.json();",
-              "pm.test('Validate-token returns expected contract', function () {",
-              "  pm.expect(json.valid).to.equal(true);",
-              "  pm.expect(Array.isArray(json.roles)).to.be.true;",
-              "  pm.expect(json.roles).to.include('inspector');",
-              "  pm.expect(json.userId).to.be.a('string').and.not.empty;",
-              "});"
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "name": "04 - NTC 5375 Access As Inspector (Allowed)",
-      "request": {
-        "method": "GET",
-        "header": [
-          {
-            "key": "Authorization",
-            "value": "Bearer {{inspectorAccessToken}}"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/auth/modules/ntc-5375/checklists",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "auth",
-            "modules",
-            "ntc-5375",
-            "checklists"
-          ]
-        }
-      },
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test('Status code is 200', function () {",
-              "  pm.response.to.have.status(200);",
-              "});",
-              "",
-              "const json = pm.response.json();",
-              "pm.test('Inspector can access NTC 5375 module', function () {",
-              "  pm.expect(json.module).to.equal('ntc-5375-checklists');",
-              "  pm.expect(json.access).to.equal(true);",
-              "});"
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "name": "05 - NTC 5375 Access As Operario (Forbidden)",
-      "request": {
-        "method": "GET",
-        "header": [
-          {
-            "key": "Authorization",
-            "value": "Bearer {{operarioAccessToken}}"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/auth/modules/ntc-5375/checklists",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "auth",
-            "modules",
-            "ntc-5375",
-            "checklists"
-          ]
-        }
-      },
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test('Status code is 403', function () {",
-              "  pm.response.to.have.status(403);",
-              "});"
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "name": "06 - Recepcion Access As Operario (Allowed)",
+      "name": "14 - Recepcion Access (OPERARIO)",
       "request": {
         "method": "GET",
         "header": [
@@ -260,9 +668,8 @@
               "pm.test('Status code is 200', function () {",
               "  pm.response.to.have.status(200);",
               "});",
-              "",
               "const json = pm.response.json();",
-              "pm.test('Operario can access recepcion module', function () {",
+              "pm.test('Recepcion route contract', function () {",
               "  pm.expect(json.module).to.equal('recepcion');",
               "  pm.expect(json.access).to.equal(true);",
               "});"
@@ -272,7 +679,178 @@
       ]
     },
     {
-      "name": "07 - Validate Token (Invalid, Expected 401)",
+      "name": "15 - Inactivate User (ADMIN/MANAGER)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{managerAccessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/users/{{operarioId}}/inactivate",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "users",
+            "{{operarioId}}",
+            "inactivate"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('User is inactivated', function () {",
+              "  pm.expect(json.isActive).to.equal(false);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "16 - Delete User (ADMIN)",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/users/{{operarioId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "users",
+            "{{operarioId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Delete message returned', function () {",
+              "  pm.expect(json.message).to.include('eliminado');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "17 - Dropdown Inspectors",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{managerAccessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/users/inspectors",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "users",
+            "inspectors"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Returns dropdown options', function () {",
+              "  pm.expect(Array.isArray(json)).to.be.true;",
+              "  if (json.length > 0) {",
+              "    pm.expect(json[0].id).to.be.a('string').and.not.empty;",
+              "    pm.expect(json[0].label).to.be.a('string').and.not.empty;",
+              "    pm.expect(json[0].role).to.equal('inspector');",
+              "  }",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "18 - Dropdown Operarios",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{managerAccessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/users/operarios",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "users",
+            "operarios"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Returns dropdown options', function () {",
+              "  pm.expect(Array.isArray(json)).to.be.true;",
+              "  if (json.length > 0) {",
+              "    pm.expect(json[0].id).to.be.a('string').and.not.empty;",
+              "    pm.expect(json[0].label).to.be.a('string').and.not.empty;",
+              "    pm.expect(json[0].role).to.equal('operario');",
+              "  }",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "19 - Logout Admin",
       "request": {
         "method": "POST",
         "header": [
@@ -283,16 +861,16 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"token\": \"invalid.token.value\"\n}"
+          "raw": "{\n  \"refreshToken\": \"{{adminRefreshToken}}\"\n}"
         },
         "url": {
-          "raw": "{{baseUrl}}/auth/validate-token",
+          "raw": "{{baseUrl}}/auth/logout",
           "host": [
             "{{baseUrl}}"
           ],
           "path": [
             "auth",
-            "validate-token"
+            "logout"
           ]
         }
       },
@@ -302,8 +880,12 @@
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test('Status code is 401', function () {",
-              "  pm.response.to.have.status(401);",
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Logout response includes message', function () {",
+              "  pm.expect(json.message).to.be.a('string').and.not.empty;",
               "});"
             ]
           }
@@ -317,20 +899,76 @@
       "value": "http://localhost:3001/api"
     },
     {
-      "key": "inspectorEmail",
-      "value": "inspector@example.com"
+      "key": "adminEmail",
+      "value": "admin@example.com"
     },
     {
-      "key": "inspectorPassword",
+      "key": "adminPassword",
       "value": "1234"
+    },
+    {
+      "key": "managerEmail",
+      "value": "manager@example.com"
+    },
+    {
+      "key": "managerPassword",
+      "value": "1234"
+    },
+    {
+      "key": "adminAccessToken",
+      "value": ""
+    },
+    {
+      "key": "adminRefreshToken",
+      "value": ""
+    },
+    {
+      "key": "managerAccessToken",
+      "value": ""
+    },
+    {
+      "key": "managerRefreshToken",
+      "value": ""
+    },
+    {
+      "key": "inspectorId",
+      "value": ""
+    },
+    {
+      "key": "operarioId",
+      "value": ""
+    },
+    {
+      "key": "inspectorIdentificationNumber",
+      "value": ""
+    },
+    {
+      "key": "inspectorPhoneNumber",
+      "value": ""
+    },
+    {
+      "key": "inspectorEmail",
+      "value": ""
+    },
+    {
+      "key": "operarioIdentificationNumber",
+      "value": ""
+    },
+    {
+      "key": "operarioPhoneNumber",
+      "value": ""
     },
     {
       "key": "operarioEmail",
-      "value": "operario@example.com"
+      "value": ""
+    },
+    {
+      "key": "inspectorPassword",
+      "value": "Inspector123!"
     },
     {
       "key": "operarioPassword",
-      "value": "1234"
+      "value": "Operario123!"
     },
     {
       "key": "inspectorAccessToken",

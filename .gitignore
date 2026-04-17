@@ -9,6 +9,7 @@ yarn-error.log*
 .pnpm-debug.log*
 coverage/
 *.log
+*.tsbuildinfo
 .eslintcache
 .DS_Store
 Thumbs.db
