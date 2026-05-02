@@ -1,0 +1,87 @@
+name: Deploy NestJS Docker
+
+on:
+  push:
+    branches: [ "main", "feat/config-deploy" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  packages: write
+  contents: read
+
+jobs:
+  deploy-docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set repository name to lowercase
+        run: echo "REPO_LC=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ env.REPO_LC }}:latest
+            ghcr.io/${{ env.REPO_LC }}:${{ github.sha }}
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.REMOTE_PORT }}
+          script: |
+            # Iniciar sesión en GHCR desde el servidor
+            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # Descargar la última imagen
+            docker pull ghcr.io/${{ env.REPO_LC }}:latest
+
+            # Detener y eliminar contenedor existente
+            docker stop auth-service || true
+            docker rm auth-service || true
+
+            # Iniciar nuevo contenedor
+            docker run -d \
+              --name auth-service \
+              -p ${{ secrets.PORT }}:${{ secrets.PORT }} \
+              -e NODE_ENV="${{ secrets.NODE_ENV }}" \
+              -e PORT="${{ secrets.PORT }}" \
+              -e JWT_ACCESS_SECRET="${{ secrets.JWT_ACCESS_SECRET }}" \
+              -e JWT_REFRESH_SECRET="${{ secrets.JWT_REFRESH_SECRET }}" \
+              -e JWT_ACCESS_TTL="${{ secrets.JWT_ACCESS_TTL }}" \
+              -e JWT_REFRESH_TTL="${{ secrets.JWT_REFRESH_TTL }}" \
+              -e REDIS_HOST="${{ secrets.REDIS_HOST }}" \
+              -e REDIS_PORT="${{ secrets.REDIS_PORT }}" \
+              -e REDIS_PASSWORD="${{ secrets.REDIS_PASSWORD }}" \
+              -e REDIS_DB="${{ secrets.REDIS_DB }}" \
+              -e REDIS_TLS_ENABLED="${{ secrets.REDIS_TLS_ENABLED }}" \
+              -e DB_HOST="${{ secrets.DB_HOST }}" \
+              -e DB_PORT="${{ secrets.DB_PORT }}" \
+              -e DB_USER="${{ secrets.DB_USER }}" \
+              -e DB_PASSWORD="${{ secrets.DB_PASSWORD }}" \
+              -e DB_NAME="${{ secrets.DB_NAME }}" \
+              -e DB_LOGGING="${{ secrets.DB_LOGGING }}" \
+              --restart unless-stopped \
+              ghcr.io/${{ env.REPO_LC }}:latest
+
+            # Limpiar imágenes antiguas
+            docker image prune -f
