@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { envValidationSchema } from './config/env.validation';
+import { CacheModule } from './cache/cache.module';
 import { RedisModule } from './redis/redis.module';
 
 @Module({
@@ -27,6 +28,7 @@ import { RedisModule } from './redis/redis.module';
       inject: [ConfigService],
     }),
     RedisModule,
+    CacheModule,
     AuthModule,
   ],
 })

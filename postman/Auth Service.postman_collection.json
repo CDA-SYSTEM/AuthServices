@@ -891,6 +891,132 @@
           }
         }
       ]
+    },
+    {
+      "name": "20 - Cache Save List",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"key\": \"{{cacheKey}}\",\n  \"value\": {{cachePayload}},\n  \"ttlSeconds\": {{cacheTtlSeconds}}\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/cache",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "cache"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 201', function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Cache saved correctly', function () {",
+              "  pm.expect(json.key).to.equal(pm.collectionVariables.get('cacheKey'));",
+              "  pm.expect(json.ttlSeconds).to.equal(Number(pm.collectionVariables.get('cacheTtlSeconds')));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "21 - Cache Get List",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/cache/{{cacheKey}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "cache",
+            "{{cacheKey}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Cache retrieved correctly', function () {",
+              "  pm.expect(json.key).to.equal(pm.collectionVariables.get('cacheKey'));",
+              "  pm.expect(json.value).to.exist;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "22 - Cache Delete List",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/cache/{{cacheKey}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "cache",
+            "{{cacheKey}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Cache invalidated correctly', function () {",
+              "  pm.expect(json.key).to.equal(pm.collectionVariables.get('cacheKey'));",
+              "});"
+            ]
+          }
+        }
+      ]
     }
   ],
   "variable": [
@@ -985,6 +1111,18 @@
     {
       "key": "operarioRefreshToken",
       "value": ""
+    },
+    {
+      "key": "cacheKey",
+      "value": "vehicles:list:active"
+    },
+    {
+      "key": "cacheTtlSeconds",
+      "value": "60"
+    },
+    {
+      "key": "cachePayload",
+      "value": "[{\"id\":\"veh-1\",\"plate\":\"ABC123\",\"status\":\"active\"}]"
     }
   ]
 }
