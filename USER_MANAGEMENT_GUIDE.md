@@ -132,10 +132,75 @@ El gateway debe:
 - Cachear listas de dropdown por corto tiempo.
 - Manejar 401/403 para refrescar token o mostrar permiso insuficiente.
 
-## Decisiones de documentacion
+## Persistencia y Base de Datos
 
-Para mantener el repositorio limpio:
-- Mantener: README.md, QUICK_START.md, USER_MANAGEMENT_GUIDE.md, DOCUMENTATION_INDEX.md
-- Opcionales: EXECUTIVE_SUMMARY.md, IMPLEMENTATION_SUMMARY.md, PASSWORD_MANAGEMENT_GUIDE.md
+### Esquema de Base de Datos
 
-Si el equipo prefiere simplicidad, se pueden eliminar los opcionales.
+El Auth Service utiliza tres tablas principales, gestionadas por migraciones TypeORM:
+
+**roles**
+```
+id (UUID, PK)
+name (VARCHAR, UNIQUE)
+description (TEXT, nullable)
+created_at, updated_at (TIMESTAMPS)
+```
+
+**users** (tabla central de usuarios operativos)
+```
+id (UUID, PK)
+identification_type (VARCHAR)
+identification_number (VARCHAR, UNIQUE)
+first_name, last_name (VARCHAR)
+phone_number (VARCHAR)
+email (VARCHAR, UNIQUE)
+role_id (UUID, FK -> roles)
+is_active (BOOLEAN, default: true) -- Soft-delete control
+deleted_at (TIMESTAMP, nullable) -- Auditoría de eliminación
+created_at, updated_at (TIMESTAMPS)
+```
+
+**auth_accounts** (credenciales + hashing)
+```
+id (UUID, PK)
+email (VARCHAR, UNIQUE)
+password_hash (VARCHAR)
+is_active (BOOLEAN, default: true)
+role_id (UUID, FK -> roles)
+deleted_at (TIMESTAMP, nullable)
+created_at, updated_at (TIMESTAMPS)
+```
+
+### Soft-Delete Implementation
+
+El Delete de usuarios NO elimina registros de la BD. En su lugar:
+
+1. **DeleteUserUseCase** marca el usuario como inactivo:
+   ```typescript
+   // En lugar de DELETE:
+   await userRepository.update(id, { isActive: false, deletedAt: new Date() });
+   ```
+
+2. **Todas las queries filtran automáticamente**:
+   ```typescript
+   // Los repositorios siempre filtran:
+   findAll() -> WHERE is_active = true
+   search() -> WHERE is_active = true AND ...
+   ```
+
+3. **Auditoría preservada**:
+   - El registro sigue en la BD con `deleted_at` timestamp
+   - Reversible: cambiar `is_active = true, deleted_at = null` si es necesario
+   - Cumple GDPR parcialmente: datos no completamente eliminados
+
+### Migraciones de Base de Datos
+
+Para detalles sobre cómo ejecutar migraciones y cambiar esquema, ver sección **"Gestión de Base de Datos (Migraciones)"** en `README.md`.
+
+**Resumen rápido:**
+- Migraciones se guardan en `src/migrations/`
+- Se ejecutan automáticamente en deployment
+- Los cambios de schema se deben hacer a través de migraciones, NO `synchronize: true`
+
+**Notas importantes:**
+- Antes de ejecutar migraciones en producción, realiza un backup y prueba el flujo en staging. Don't fucky the project!!

@@ -26,13 +26,20 @@ export class DeleteUserUseCase {
       throw new ForbiddenException('Solo se pueden eliminar usuarios con rol OPERARIO o INSPECTOR');
     }
 
-    const deleted = await this.userRepository.delete(id);
-    if (!deleted) {
+    // Prefer soft-delete: marcar como inactivo para preservar trazabilidad
+    const updated = await this.userRepository.update(id, { isActive: false });
+    if (!updated) {
       throw new NotFoundException('Usuario no encontrado');
     }
 
-    await this.authAccountRepository.deleteByEmail(user.email);
+    // Mantener la cuenta de autenticacion sincronizada en estado inactivo
+    await this.authAccountRepository.syncByEmail({
+      previousEmail: user.email,
+      email: user.email,
+      role: user.role,
+      isActive: false,
+    });
 
-    return { message: 'Usuario eliminado correctamente' };
+    return { message: 'Usuario inactivado correctamente' };
   }
 }

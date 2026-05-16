@@ -90,8 +90,97 @@ Respuesta esperada (ambos):
 2. Registrar inspector/operario: POST /api/auth/register
 3. Listar dropdown: GET /api/auth/users/inspectors o GET /api/auth/users/operarios
 
+## Gestión de Base de Datos (Migraciones)
+
+### Configuración de Migraciones TypeORM
+
+Este servicio usa **migraciones versionadas** para gestionar cambios de esquema de forma controlada y reproducible.
+
+**Archivos de configuración:**
+- `src/data-source.ts`: Configuración de TypeORM para CLI de migraciones
+- `src/migrations/`: Directorio con archivos de migración numerados
+
+**Migraciones implementadas:**
+1. `1000-create-initial-schema.ts` - Crea tablas base (roles, users, auth_accounts)
+2. `1001-add-deleted-at-audit.ts` - Añade columna deletedAt para auditoría de soft-delete
+3. `1002-add-performance-indexes.ts` - Crea índices de optimización
+
+### Comandos de Migraciones
+
+```bash
+# Ejecutar migraciones pendientes
+npm run migration:run
+
+# Ver estado de migraciones (pendientes y ejecutadas)
+npm run migration:show
+npm run migration:pending
+
+# Revertir última migración
+npm run migration:revert
+
+# Crear nueva migración (después de cambiar entities)
+npm run migration:create -- src/migrations/NNNN-descripcion
+```
+
+### Workflow en Desarrollo
+
+1. **Cambiar una entidad TypeORM** (agregar/modificar columnas):
+   ```typescript
+   @Column({ type: 'varchar', length: 100 })
+   newField!: string;
+   ```
+
+2. **Generar migración automáticamente**:
+   ```bash
+   npm run migration:create -- src/migrations/1003-add-new-field
+   ```
+
+3. **Ejecutar migraciones locales**:
+   ```bash
+   npm run migration:run
+   ```
+
+4. **Probar cambios** en desarrollo:
+   ```bash
+   npm run start:dev
+   ```
+
+5. **Commitear archivos de migración** (importante para reproducibilidad):
+   ```bash
+   git add src/migrations/1003-*.ts
+   git commit -m "feat: add new field with migration"
+   ```
+
+### Deployment / Producción
+
+En producción, las migraciones se ejecutan automáticamente:
+
+```bash
+# En CI/CD o antes de npm run start:prod:
+npm run migration:run
+
+# Luego iniciar el servicio
+npm run start:prod
+```
+
+**Importante:** NUNCA usar `synchronize: true` en producción. Las migraciones son la única forma segura de actualizar esquema.
+
+### Buenas Prácticas de Migraciones
+
+✅ **Hacer:**
+- Crear columnas nuevas con valores DEFAULT
+- Hacer migraciones idempotentes (ejecutar 2 veces = mismo resultado)
+- Incluir comentarios explicativos en migraciones complejas
+- Probar rollback: `npm run migration:revert` antes de commitear
+- Una migración = un cambio lógico (no mezclar múltiples cambios)
+
+❌ **Evitar:**
+- Eliminar columnas en migraciones (guardar para versión major)
+- Cambiar tipos de datos sin migración intermedia
+- Usar `synchronize: true` en cualquier entorno que no sea desarrollo local
+- Migraciones muy grandes con múltiples cambios sin relación
+
 ## Documentacion
 
 - Ver guia funcional completa en USER_MANAGEMENT_GUIDE.md
-- Ver instalacion rapida en QUICK_START.md
-- Ver indice en DOCUMENTATION_INDEX.md
+- Ver instalacion rapida en MIGRATION_SETUP.md
