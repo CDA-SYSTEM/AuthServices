@@ -41,6 +41,23 @@ async function bootstrap(): Promise<void> {
     .build();
 
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
+
+  const paths = swaggerDocument.paths as Record<string, any>;
+  for (const pathKey of Object.keys(paths)) {
+    const pathItem = paths[pathKey];
+    for (const method of ['get', 'post', 'put', 'patch', 'delete', 'options', 'head']) {
+      const operation = pathItem[method];
+      if (!operation) continue;
+      if (operation.security && operation.security.length > 0) {
+        for (const sec of operation.security) {
+          sec['api-key'] = [];
+        }
+      } else {
+        operation.security = [{ 'api-key': [] }];
+      }
+    }
+  }
+
   SwaggerModule.setup('api/docs', app, swaggerDocument, {
     swaggerOptions: {
       tagsSorter: 'alpha',

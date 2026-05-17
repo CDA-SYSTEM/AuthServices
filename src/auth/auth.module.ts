@@ -18,9 +18,12 @@ import { RegisterUserUseCase } from './application/use-cases/register-user.use-c
 import { GetUsersUseCase } from './application/use-cases/get-users.use-case';
 import { UpdateUserUseCase } from './application/use-cases/update-user.use-case';
 import { DeleteUserUseCase } from './application/use-cases/delete-user.use-case';
+import { GetRolesUseCase } from './application/use-cases/get-roles.use-case';
 import { UserSeedService } from './infrastructure/seeds/user-seed.service';
 import { AUTH_ACCOUNT_REPOSITORY } from './domain/ports/auth-account-repository.port';
 import { AuthAccountRepositoryAdapter } from './infrastructure/persistence/auth-account-repository.adapter';
+import { ROLE_REPOSITORY } from './domain/ports/role-repository.port';
+import { RoleRepositoryAdapter } from './infrastructure/persistence/role-repository.adapter';
 
 @Module({
   imports: [
@@ -39,6 +42,7 @@ import { AuthAccountRepositoryAdapter } from './infrastructure/persistence/auth-
     GetUsersUseCase,
     UpdateUserUseCase,
     DeleteUserUseCase,
+    GetRolesUseCase,
     UserSeedService,
     RolesGuard,
     UserRepositoryAdapter,
@@ -50,6 +54,11 @@ import { AuthAccountRepositoryAdapter } from './infrastructure/persistence/auth-
     {
       provide: AUTH_ACCOUNT_REPOSITORY,
       useClass: AuthAccountRepositoryAdapter,
+    },
+    RoleRepositoryAdapter,
+    {
+      provide: ROLE_REPOSITORY,
+      useClass: RoleRepositoryAdapter,
     },
   ],
   exports: [AuthService],

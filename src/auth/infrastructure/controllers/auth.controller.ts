@@ -23,6 +23,9 @@ import { DeleteUserUseCase } from '../../application/use-cases/delete-user.use-c
 import { ValidateTokenResponseDto } from '../../domain/dto/validate-token-response.dto';
 import { UserResponseDto } from '../../domain/dto/user-response.dto';
 import { UserOptionResponseDto } from '../../domain/dto/user-option.response.dto';
+import { RoleResponseDto } from '../../domain/dto/role-response.dto';
+import { GetRolesUseCase } from '../../application/use-cases/get-roles.use-case';
+import { Role } from '../../domain/interfaces/role.interface';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -36,6 +39,7 @@ export class AuthController {
     private readonly getUsersUseCase: GetUsersUseCase,
     private readonly updateUserUseCase: UpdateUserUseCase,
     private readonly deleteUserUseCase: DeleteUserUseCase,
+    private readonly getRolesUseCase: GetRolesUseCase,
   ) {}
 
   @Post('login')
@@ -517,6 +521,42 @@ export class AuthController {
       module: 'recepcion',
       access: true,
     };
+  }
+
+  @Get('roles')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @ApiBearerAuth('bearer')
+  @ApiOperation({
+    summary: 'Listar roles disponibles',
+    description: 'Retorna todos los roles registrados en el sistema con su codigo, alcance y permisos asociados.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Listado de roles',
+    type: RoleResponseDto,
+    isArray: true,
+    content: {
+      'application/json': {
+        example: [
+          {
+            id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+            code: 'ADMIN',
+            scope: 'Acceso total al sistema',
+            permissions: 'Lectura, escritura, administracion de usuarios y configuracion',
+          },
+          {
+            id: 'b2c3d4e5-f6a7-8901-bcde-f12345678901',
+            code: 'MANAGER',
+            scope: 'Gestion operativa del sistema',
+            permissions: 'Lectura, escritura, gestion de usuarios operativos',
+          },
+        ],
+      },
+    },
+  })
+  getRoles(): Promise<Role[]> {
+    return this.getRolesUseCase.execute();
   }
 
   private mapUsersToOptions(users: User[]): UserOptionResponseDto[] {
