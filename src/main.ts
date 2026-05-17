@@ -29,6 +29,15 @@ async function bootstrap(): Promise<void> {
       },
       'bearer',
     )
+    .addApiKey(
+      {
+        type: 'apiKey',
+        name: 'x-api-key',
+        in: 'header',
+        description: 'API Key para autenticación entre microservicios',
+      },
+      'api-key',
+    )
     .build();
 
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);

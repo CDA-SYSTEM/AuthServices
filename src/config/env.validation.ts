@@ -12,6 +12,7 @@ export const envValidationSchema = Joi.object({
   REDIS_PASSWORD: Joi.string().allow('').optional(),
   REDIS_DB: Joi.number().integer().min(0).default(0),
   REDIS_TLS_ENABLED: Joi.boolean().truthy('true').falsy('false').default(false),
+  API_KEY: Joi.string().min(16).required(),
   DB_HOST: Joi.string().hostname().default('localhost'),
   DB_PORT: Joi.number().port().default(5432),
   DB_USER: Joi.string().default('postgres'),

@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { envValidationSchema } from './config/env.validation';
 import { CacheModule } from './cache/cache.module';
 import { RedisModule } from './redis/redis.module';
+import { ApiKeyGuard } from './common/infrastructure/guards/api-key.guard';
 
 @Module({
   imports: [
@@ -30,6 +32,12 @@ import { RedisModule } from './redis/redis.module';
     RedisModule,
     CacheModule,
     AuthModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ApiKeyGuard,
+    },
   ],
 })
 export class AppModule {}
