@@ -1,6 +1,5 @@
 import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { USER_REPOSITORY, UserRepositoryPort } from '../../domain/ports/user-repository.port';
-import { AUTH_ACCOUNT_REPOSITORY, AuthAccountRepositoryPort } from '../../domain/ports/auth-account-repository.port';
 import { UserRole } from '../../../common/domain/enums/user-role.enum';
 
 @Injectable()
@@ -8,8 +7,6 @@ export class DeleteUserUseCase {
   constructor(
     @Inject(USER_REPOSITORY)
     private readonly userRepository: UserRepositoryPort,
-    @Inject(AUTH_ACCOUNT_REPOSITORY)
-    private readonly authAccountRepository: AuthAccountRepositoryPort,
   ) {}
 
   async execute(id: string, requestingUserRole: UserRole): Promise<{ message: string }> {
@@ -31,14 +28,6 @@ export class DeleteUserUseCase {
     if (!updated) {
       throw new NotFoundException('Usuario no encontrado');
     }
-
-    // Mantener la cuenta de autenticacion sincronizada en estado inactivo
-    await this.authAccountRepository.syncByEmail({
-      previousEmail: user.email,
-      email: user.email,
-      role: user.role,
-      isActive: false,
-    });
 
     return { message: 'Usuario inactivado correctamente' };
   }

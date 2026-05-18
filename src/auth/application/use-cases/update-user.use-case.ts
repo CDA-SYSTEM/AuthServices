@@ -1,6 +1,5 @@
 import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { USER_REPOSITORY, UserRepositoryPort } from '../../domain/ports/user-repository.port';
-import { AUTH_ACCOUNT_REPOSITORY, AuthAccountRepositoryPort } from '../../domain/ports/auth-account-repository.port';
 import { User } from '../../domain/interfaces/user.interface';
 import { UserRole } from '../../../common/domain/enums/user-role.enum';
 import { UpdateUserDto } from '../../domain/dto/update-user.dto';
@@ -10,8 +9,6 @@ export class UpdateUserUseCase {
   constructor(
     @Inject(USER_REPOSITORY)
     private readonly userRepository: UserRepositoryPort,
-    @Inject(AUTH_ACCOUNT_REPOSITORY)
-    private readonly authAccountRepository: AuthAccountRepositoryPort,
   ) {}
 
   async execute(id: string, dto: UpdateUserDto, requestingUserRole: UserRole): Promise<User> {
@@ -57,13 +54,6 @@ export class UpdateUserUseCase {
     if (!updatedUser) {
       throw new NotFoundException('Usuario no encontrado');
     }
-
-    await this.authAccountRepository.syncByEmail({
-      previousEmail: currentUser.email,
-      email: updatedUser.email,
-      role: updatedUser.role,
-      isActive: updatedUser.isActive,
-    });
 
     return updatedUser;
   }

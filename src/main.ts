@@ -20,6 +20,7 @@ async function bootstrap(): Promise<void> {
     )
     .setVersion('1.0.0')
     .addTag('Auth', 'Flujos de autenticacion, renovacion de tokens, usuarios y control de acceso.')
+    .addTag('Admin Personnel', 'Gestion administrativa del personal operativo (sin crear credenciales de login).')
     .addTag('Cache', 'Cache Redis compartido para listas y objetos reutilizables entre servicios.')
     .addBearerAuth(
       {

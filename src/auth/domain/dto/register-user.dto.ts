@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsString, MinLength, IsEnum, Matches, IsOptional } from 'class-validator';
+import { IsEmail, IsString, MinLength, IsEnum, Matches } from 'class-validator';
 import { UserRole } from '../../../common/domain/enums/user-role.enum';
 import { IdentificationType } from '../../../common/domain/enums/identification-type.enum';
 
@@ -37,12 +37,6 @@ export class RegisterUserDto {
   @ApiProperty({ example: 'laura@example.com', description: 'Correo electronico del usuario' })
   @IsEmail({}, { message: 'El formato del email no es válido' })
   email!: string;
-
-  @ApiProperty({ example: 'Password123!', required: false, description: 'Clave inicial opcional' })
-  @IsOptional()
-  @IsString()
-  @MinLength(8, { message: 'La contraseña debe tener al menos 8 caracteres' })
-  password?: string;
 
   @ApiProperty({ enum: UserRole, example: UserRole.INSPECTOR, description: 'Rol que se asigna al usuario' })
   @IsEnum(UserRole, { message: `El rol debe ser uno de: ${Object.values(UserRole).join(', ')}` })

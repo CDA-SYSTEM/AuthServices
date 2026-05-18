@@ -14,9 +14,7 @@ import { SearchUsersUseCase } from '../../application/use-cases/search-users.use
 import { ValidateTokenResult, ValidateTokenUseCase } from '../../application/use-cases/validate-token.use-case';
 import { ValidateTokenDto } from '../../domain/dto/validate-token.dto';
 import { User } from '../../domain/interfaces/user.interface';
-import { RegisterUserUseCase } from '../../application/use-cases/register-user.use-case';
 import { GetUsersUseCase } from '../../application/use-cases/get-users.use-case';
-import { RegisterUserDto } from '../../domain/dto/register-user.dto';
 import { UpdateUserDto } from '../../domain/dto/update-user.dto';
 import { UpdateUserUseCase } from '../../application/use-cases/update-user.use-case';
 import { DeleteUserUseCase } from '../../application/use-cases/delete-user.use-case';
@@ -26,6 +24,9 @@ import { UserOptionResponseDto } from '../../domain/dto/user-option.response.dto
 import { RoleResponseDto } from '../../domain/dto/role-response.dto';
 import { GetRolesUseCase } from '../../application/use-cases/get-roles.use-case';
 import { Role } from '../../domain/interfaces/role.interface';
+import { IdentificationTypeResponseDto } from '../../domain/dto/identification-type-response.dto';
+import { GetIdentificationTypesUseCase } from '../../application/use-cases/get-identification-types.use-case';
+import { ErrorResponseDto } from '../../../common/domain/dto/error-response.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -35,20 +36,55 @@ export class AuthController {
     private readonly findUserByIdUseCase: FindUserByIdUseCase,
     private readonly searchUsersUseCase: SearchUsersUseCase,
     private readonly validateTokenUseCase: ValidateTokenUseCase,
-    private readonly registerUserUseCase: RegisterUserUseCase,
     private readonly getUsersUseCase: GetUsersUseCase,
     private readonly updateUserUseCase: UpdateUserUseCase,
     private readonly deleteUserUseCase: DeleteUserUseCase,
     private readonly getRolesUseCase: GetRolesUseCase,
+    private readonly getIdentificationTypesUseCase: GetIdentificationTypesUseCase,
   ) {}
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Iniciar sesion para el portal',
-    description: 'Valida credenciales y entrega un access token y un refresh token listos para operar el panel o el gateway.',
+    description:
+      'Endpoint publico de autenticacion. Solo valida las 4 cuentas institucionales semilladas (admin, manager, inspector, operario) y retorna JWT de acceso y refresco.',
   })
-  @ApiBody({ type: LoginDto })
+  @ApiBody({
+    type: LoginDto,
+    required: true,
+    description: 'Credenciales institucionales del CDA',
+    examples: {
+      admin: {
+        summary: 'Login ADMIN',
+        value: {
+          email: 'admin@example.com',
+          password: '1234',
+        },
+      },
+      manager: {
+        summary: 'Login MANAGER',
+        value: {
+          email: 'manager@example.com',
+          password: '1234',
+        },
+      },
+      inspector: {
+        summary: 'Login INSPECTOR',
+        value: {
+          email: 'inspector@example.com',
+          password: '1234',
+        },
+      },
+      operario: {
+        summary: 'Login OPERARIO',
+        value: {
+          email: 'operario@example.com',
+          password: '1234',
+        },
+      },
+    },
+  })
   @ApiResponse({
     status: 200,
     description: 'Sesion iniciada correctamente',
@@ -62,7 +98,33 @@ export class AuthController {
       },
     },
   })
-  @ApiResponse({ status: 401, description: 'Credenciales invalidas' })
+  @ApiResponse({
+    status: 401,
+    description: 'Credenciales invalidas o API key invalida',
+    type: ErrorResponseDto,
+    content: {
+      'application/json': {
+        examples: {
+          invalidCredentials: {
+            summary: 'Credenciales invalidas',
+            value: {
+              statusCode: 401,
+              message: 'Credenciales invalidas',
+              error: 'Unauthorized',
+            },
+          },
+          invalidApiKey: {
+            summary: 'API key invalida',
+            value: {
+              statusCode: 401,
+              message: 'API Key inválida',
+              error: 'Unauthorized',
+            },
+          },
+        },
+      },
+    },
+  })
   login(@Body() dto: LoginDto): Promise<TokenPairResponseDto> {
     return this.authService.login(dto);
   }
@@ -87,7 +149,11 @@ export class AuthController {
       },
     },
   })
-  @ApiResponse({ status: 401, description: 'Refresh token invalido, revocado o expirado' })
+  @ApiResponse({
+    status: 401,
+    description: 'Refresh token invalido, revocado o expirado',
+    type: ErrorResponseDto,
+  })
   refresh(@Body() dto: RefreshTokenDto): Promise<TokenPairResponseDto> {
     return this.authService.refresh(dto);
   }
@@ -100,7 +166,7 @@ export class AuthController {
   })
   @ApiBody({ type: LogoutDto })
   @ApiResponse({ status: 200, description: 'Sesion cerrada correctamente' })
-  @ApiResponse({ status: 401, description: 'Refresh token invalido o expirado' })
+  @ApiResponse({ status: 401, description: 'Refresh token invalido o expirado', type: ErrorResponseDto })
   logout(@Body() dto: LogoutDto): Promise<{ message: string }> {
     return this.authService.logout(dto);
   }
@@ -124,13 +190,13 @@ export class AuthController {
         example: [
           {
             id: '8f1d0e2c-8d69-4be2-a1f2-2b5ad497f44a',
-            identificationType: 'CC',
+            identificationType: 'cc',
             identificationNumber: '1234567890',
             firstName: 'Laura',
             lastName: 'Gomez',
             phoneNumber: '+573001112233',
             email: 'laura.gomez@cda-system.com',
-            role: 'INSPECTOR',
+            role: 'inspector',
             isActive: true,
             createdAt: '2026-05-16T15:20:30.000Z',
             updatedAt: '2026-05-16T15:20:30.000Z',
@@ -158,7 +224,7 @@ export class AuthController {
       'application/json': {
         example: {
           valid: true,
-          roles: ['ADMIN', 'MANAGER'],
+          roles: ['admin', 'manager'],
           userId: '8f1d0e2c-8d69-4be2-a1f2-2b5ad497f44a',
         },
       },
@@ -167,48 +233,6 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Token invalido, revocado o expirado' })
   validateToken(@Body() dto: ValidateTokenDto): Promise<ValidateTokenResult> {
     return this.validateTokenUseCase.execute(dto.token);
-  }
-
-  @Post('register')
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles(UserRole.ADMIN)
-  @HttpCode(HttpStatus.CREATED)
-  @ApiBearerAuth('bearer')
-  @ApiOperation({
-    summary: 'Registrar usuario operativo',
-    description: 'Crea un usuario con rol operario o inspector. Solo disponible para ADMIN y pensado para alta operativa desde backoffice.',
-  })
-  @ApiBody({ type: RegisterUserDto })
-  @ApiResponse({
-    status: 201,
-    description: 'Usuario creado correctamente',
-    type: UserResponseDto,
-    content: {
-      'application/json': {
-        example: {
-          id: '8f1d0e2c-8d69-4be2-a1f2-2b5ad497f44a',
-          identificationType: 'CC',
-          identificationNumber: '1234567890',
-          firstName: 'Laura',
-          lastName: 'Gomez',
-          phoneNumber: '+573001112233',
-          email: 'laura.gomez@cda-system.com',
-          role: 'INSPECTOR',
-          isActive: true,
-          createdAt: '2026-05-16T15:20:30.000Z',
-          updatedAt: '2026-05-16T15:20:30.000Z',
-        },
-      },
-    },
-  })
-  @ApiResponse({ status: 400, description: 'Datos invalidos o rol no permitido' })
-  @ApiResponse({ status: 401, description: 'No autenticado' })
-  @ApiResponse({ status: 403, description: 'No autorizado para registrar usuarios' })
-  register(
-    @Body() dto: RegisterUserDto,
-    @Request() req: any,
-  ): Promise<User> {
-    return this.registerUserUseCase.execute(dto, req.user.role);
   }
 
   @Get('users')
@@ -230,26 +254,26 @@ export class AuthController {
         example: [
           {
             id: '8f1d0e2c-8d69-4be2-a1f2-2b5ad497f44a',
-            identificationType: 'CC',
+            identificationType: 'cc',
             identificationNumber: '1234567890',
             firstName: 'Laura',
             lastName: 'Gomez',
             phoneNumber: '+573001112233',
             email: 'laura.gomez@cda-system.com',
-            role: 'INSPECTOR',
+            role: 'inspector',
             isActive: true,
             createdAt: '2026-05-16T15:20:30.000Z',
             updatedAt: '2026-05-16T15:20:30.000Z',
           },
           {
             id: '5c2e71f0-3a2d-4a0b-9b0d-1b0f1c8d3f71',
-            identificationType: 'CC',
+            identificationType: 'cc',
             identificationNumber: '9876543210',
             firstName: 'Carlos',
             lastName: 'Ruiz',
             phoneNumber: '+573105556677',
             email: 'carlos.ruiz@cda-system.com',
-            role: 'OPERARIO',
+            role: 'operario',
             isActive: true,
             createdAt: '2026-05-16T15:20:30.000Z',
             updatedAt: '2026-05-16T15:20:30.000Z',
@@ -278,8 +302,8 @@ export class AuthController {
     content: {
       'application/json': {
         example: [
-          { id: '8f1d0e2c-8d69-4be2-a1f2-2b5ad497f44a', label: 'Laura Gomez', role: 'INSPECTOR' },
-          { id: '2f0c6b64-8fcb-4b2e-9d79-4d4a1b7d3a55', label: 'Andres Pardo', role: 'INSPECTOR' },
+          { id: '8f1d0e2c-8d69-4be2-a1f2-2b5ad497f44a', label: 'Laura Gomez', role: 'inspector' },
+          { id: '2f0c6b64-8fcb-4b2e-9d79-4d4a1b7d3a55', label: 'Andres Pardo', role: 'inspector' },
         ],
       },
     },
@@ -305,8 +329,8 @@ export class AuthController {
     content: {
       'application/json': {
         example: [
-          { id: '5c2e71f0-3a2d-4a0b-9b0d-1b0f1c8d3f71', label: 'Carlos Ruiz', role: 'OPERARIO' },
-          { id: '6e4f2a3d-1c7e-4f3f-8c33-4c2a5f7a9c22', label: 'Sofia Herrera', role: 'OPERARIO' },
+          { id: '5c2e71f0-3a2d-4a0b-9b0d-1b0f1c8d3f71', label: 'Carlos Ruiz', role: 'operario' },
+          { id: '6e4f2a3d-1c7e-4f3f-8c33-4c2a5f7a9c22', label: 'Sofia Herrera', role: 'operario' },
         ],
       },
     },
@@ -333,7 +357,7 @@ export class AuthController {
     content: {
       'application/json': {
         example: [
-          { id: '8f1d0e2c-8d69-4be2-a1f2-2b5ad497f44a', label: 'Laura Gomez', role: 'INSPECTOR' },
+          { id: '8f1d0e2c-8d69-4be2-a1f2-2b5ad497f44a', label: 'Laura Gomez', role: 'inspector' },
         ],
       },
     },
@@ -365,13 +389,13 @@ export class AuthController {
       'application/json': {
         example: {
           id: '8f1d0e2c-8d69-4be2-a1f2-2b5ad497f44a',
-          identificationType: 'CC',
+          identificationType: 'cc',
           identificationNumber: '1234567890',
           firstName: 'Laura',
           lastName: 'Gomez',
           phoneNumber: '+573001112233',
           email: 'laura.gomez@cda-system.com',
-          role: 'INSPECTOR',
+          role: 'inspector',
           isActive: true,
           createdAt: '2026-05-16T15:20:30.000Z',
           updatedAt: '2026-05-16T15:20:30.000Z',
@@ -402,13 +426,13 @@ export class AuthController {
       'application/json': {
         example: {
           id: '8f1d0e2c-8d69-4be2-a1f2-2b5ad497f44a',
-          identificationType: 'CC',
+          identificationType: 'cc',
           identificationNumber: '1234567890',
           firstName: 'Laura',
           lastName: 'Gomez',
           phoneNumber: '+573001112233',
           email: 'laura.gomez@cda-system.com',
-          role: 'INSPECTOR',
+          role: 'inspector',
           isActive: true,
           createdAt: '2026-05-16T15:20:30.000Z',
           updatedAt: '2026-05-16T16:10:00.000Z',
@@ -443,13 +467,13 @@ export class AuthController {
       'application/json': {
         example: {
           id: '8f1d0e2c-8d69-4be2-a1f2-2b5ad497f44a',
-          identificationType: 'CC',
+          identificationType: 'cc',
           identificationNumber: '1234567890',
           firstName: 'Laura',
           lastName: 'Gomez',
           phoneNumber: '+573001112233',
           email: 'laura.gomez@cda-system.com',
-          role: 'INSPECTOR',
+          role: 'inspector',
           isActive: false,
           createdAt: '2026-05-16T15:20:30.000Z',
           updatedAt: '2026-05-16T16:10:00.000Z',
@@ -541,13 +565,13 @@ export class AuthController {
         example: [
           {
             id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-            code: 'ADMIN',
+            code: 'admin',
             scope: 'Acceso total al sistema',
             permissions: 'Lectura, escritura, administracion de usuarios y configuracion',
           },
           {
             id: 'b2c3d4e5-f6a7-8901-bcde-f12345678901',
-            code: 'MANAGER',
+            code: 'manager',
             scope: 'Gestion operativa del sistema',
             permissions: 'Lectura, escritura, gestion de usuarios operativos',
           },
@@ -557,6 +581,24 @@ export class AuthController {
   })
   getRoles(): Promise<Role[]> {
     return this.getRolesUseCase.execute();
+  }
+
+  @Get('identification-types')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @ApiBearerAuth('bearer')
+  @ApiOperation({
+    summary: 'Listar tipos de identificacion disponibles',
+    description: 'Retorna todos los tipos de identificacion registrados en el sistema.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Listado de tipos de identificacion',
+    type: IdentificationTypeResponseDto,
+    isArray: true,
+  })
+  getIdentificationTypes(): Promise<any[]> {
+    return this.getIdentificationTypesUseCase.execute();
   }
 
   private mapUsersToOptions(users: User[]): UserOptionResponseDto[] {

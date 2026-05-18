@@ -9,7 +9,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { RoleEntity } from './role.entity';
-import { IdentificationType } from '../../../../common/domain/enums/identification-type.enum';
+import { IdentificationTypeEntity } from './identification-type.entity';
 
 @Entity('users')
 @Index(['email'], { unique: true })
@@ -18,8 +18,9 @@ export class UserEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ type: 'enum', enum: IdentificationType })
-  identificationType!: IdentificationType;
+  @ManyToOne(() => IdentificationTypeEntity, (idType) => idType.users, { nullable: false, eager: true })
+  @JoinColumn({ name: 'identification_type_id' })
+  identificationType!: IdentificationTypeEntity;
 
   @Column({ type: 'varchar', length: 20, unique: true })
   identificationNumber!: string;

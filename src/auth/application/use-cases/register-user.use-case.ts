@@ -1,7 +1,5 @@
 import { Injectable, Inject, ConflictException, BadRequestException, ForbiddenException } from '@nestjs/common';
-import * as bcrypt from 'bcrypt';
 import { USER_REPOSITORY, UserRepositoryPort } from '../../domain/ports/user-repository.port';
-import { AUTH_ACCOUNT_REPOSITORY, AuthAccountRepositoryPort } from '../../domain/ports/auth-account-repository.port';
 import { RegisterUserDto } from '../../domain/dto/register-user.dto';
 import { User } from '../../domain/interfaces/user.interface';
 import { UserRole } from '../../../common/domain/enums/user-role.enum';
@@ -11,8 +9,6 @@ export class RegisterUserUseCase {
   constructor(
     @Inject(USER_REPOSITORY)
     private readonly userRepository: UserRepositoryPort,
-    @Inject(AUTH_ACCOUNT_REPOSITORY)
-    private readonly authAccountRepository: AuthAccountRepositoryPort,
   ) {}
 
   async execute(registerDto: RegisterUserDto, requestingUserRole: UserRole): Promise<User> {
@@ -27,11 +23,6 @@ export class RegisterUserUseCase {
     const existingByEmail = await this.userRepository.findByEmail(registerDto.email);
     if (existingByEmail) {
       throw new ConflictException('El email ya está registrado');
-    }
-
-    const existingAuthAccount = await this.authAccountRepository.findByEmail(registerDto.email);
-    if (existingAuthAccount) {
-      throw new ConflictException('El email ya está registrado para acceso al sistema');
     }
 
     const existingByDocument = await this.userRepository.findByIdentificationNumber(
@@ -50,16 +41,6 @@ export class RegisterUserUseCase {
       email: registerDto.email,
       role: registerDto.role,
       isActive: true,
-    });
-
-    const plainPassword = registerDto.password ?? registerDto.identificationNumber;
-    const hashedPassword = await bcrypt.hash(plainPassword, 10);
-
-    await this.authAccountRepository.create({
-      email: newUser.email,
-      password: hashedPassword,
-      role: newUser.role,
-      isActive: newUser.isActive,
     });
 
     return newUser;

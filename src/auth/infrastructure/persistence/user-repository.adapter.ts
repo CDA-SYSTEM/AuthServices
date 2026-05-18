@@ -6,6 +6,8 @@ import { UserRepositoryPort } from '../../domain/ports/user-repository.port';
 import { User } from '../../domain/interfaces/user.interface';
 import { UserRole } from '../../../common/domain/enums/user-role.enum';
 import { RoleEntity } from './entities/role.entity';
+import { IdentificationTypeEntity } from './entities/identification-type.entity';
+import { IdentificationType } from '../../../common/domain/enums/identification-type.enum';
 
 @Injectable()
 export class UserRepositoryAdapter implements UserRepositoryPort {
@@ -14,6 +16,8 @@ export class UserRepositoryAdapter implements UserRepositoryPort {
     private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(RoleEntity)
     private readonly roleRepository: Repository<RoleEntity>,
+    @InjectRepository(IdentificationTypeEntity)
+    private readonly identificationTypeRepository: Repository<IdentificationTypeEntity>,
   ) {}
 
   async findById(id: string): Promise<User | null> {
@@ -82,9 +86,10 @@ export class UserRepositoryAdapter implements UserRepositoryPort {
 
   async create(userData: Omit<User, 'id' | 'createdAt' | 'updatedAt'>): Promise<User> {
     const roleEntity = await this.resolveRole(userData.role);
+    const identificationTypeEntity = await this.resolveIdentificationType(userData.identificationType);
 
     const userEntity = this.userRepository.create({
-      identificationType: userData.identificationType,
+      identificationType: identificationTypeEntity,
       identificationNumber: userData.identificationNumber,
       firstName: userData.firstName,
       lastName: userData.lastName,
@@ -108,7 +113,7 @@ export class UserRepositoryAdapter implements UserRepositoryPort {
     }
 
     if (updates.identificationType !== undefined) {
-      userEntity.identificationType = updates.identificationType;
+      userEntity.identificationType = await this.resolveIdentificationType(updates.identificationType);
     }
     if (updates.identificationNumber !== undefined) {
       userEntity.identificationNumber = updates.identificationNumber;
@@ -144,17 +149,25 @@ export class UserRepositoryAdapter implements UserRepositoryPort {
   private mapEntityToUser(entity: UserEntity): User {
     return {
       id: entity.id,
-      identificationType: entity.identificationType,
+      identificationType: (entity.identificationType?.name as IdentificationType) ?? IdentificationType.CC,
       identificationNumber: entity.identificationNumber,
       email: entity.email,
       firstName: entity.firstName,
       lastName: entity.lastName,
       phoneNumber: entity.phoneNumber,
-      role: entity.role.code,
+      role: (entity.role?.code) as UserRole,
       isActive: entity.isActive,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
     };
+  }
+
+  private async resolveIdentificationType(identificationType: IdentificationType): Promise<IdentificationTypeEntity> {
+    const idType = await this.identificationTypeRepository.findOne({ where: { name: identificationType } });
+    if (!idType) {
+      throw new Error(`Tipo de identificación ${identificationType} no configurado en la tabla identification_types`);
+    }
+    return idType;
   }
 
   private async resolveRole(roleCode: UserRole): Promise<RoleEntity> {

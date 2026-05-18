@@ -1,11 +1,13 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { UserRole } from '../../../common/domain/enums/user-role.enum';
+import { IdentificationType } from '../../../common/domain/enums/identification-type.enum';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RoleEntity } from '../persistence/entities/role.entity';
 import { AuthAccountEntity } from '../persistence/entities/auth-account.entity';
 import { UserEntity } from '../persistence/entities/user.entity';
+import { IdentificationTypeEntity } from '../persistence/entities/identification-type.entity';
 
 type RoleSeed = {
   code: UserRole;
@@ -20,14 +22,27 @@ export class UserSeedService implements OnModuleInit {
     private readonly roleRepository: Repository<RoleEntity>,
     @InjectRepository(AuthAccountEntity)
     private readonly authAccountRepository: Repository<AuthAccountEntity>,
-    @InjectRepository(UserEntity)
-    private readonly userRepository: Repository<UserEntity>,
+    @InjectRepository(IdentificationTypeEntity)
+    private readonly identificationTypeRepository: Repository<IdentificationTypeEntity>,
   ) {}
 
   async onModuleInit(): Promise<void> {
+    await this.ensureIdentificationTypes();
     const roles = await this.ensureRoles();
     await this.ensureAuthAccounts(roles);
-    await this.ensureOperationalAccounts(roles);
+  }
+
+  private async ensureIdentificationTypes(): Promise<void> {
+    const typeSeeds = Object.values(IdentificationType);
+
+    for (const name of typeSeeds) {
+      const exists = await this.identificationTypeRepository.findOne({ where: { name } });
+      if (!exists) {
+        await this.identificationTypeRepository.save(
+          this.identificationTypeRepository.create({ name }),
+        );
+      }
+    }
   }
 
   private async ensureRoles(): Promise<Record<UserRole, RoleEntity>> {
@@ -78,6 +93,8 @@ export class UserSeedService implements OnModuleInit {
   private async ensureAuthAccounts(roles: Record<UserRole, RoleEntity>): Promise<void> {
     const adminExists = await this.authAccountRepository.findOne({ where: { email: 'admin@example.com' } });
     const managerExists = await this.authAccountRepository.findOne({ where: { email: 'manager@example.com' } });
+    const inspectorExists = await this.authAccountRepository.findOne({ where: { email: 'inspector@example.com' } });
+    const operarioExists = await this.authAccountRepository.findOne({ where: { email: 'operario@example.com' } });
 
     const hashedPassword = await bcrypt.hash('1234', 10);
 
@@ -102,35 +119,28 @@ export class UserSeedService implements OnModuleInit {
         }),
       );
     }
-  }
 
-  private async ensureOperationalAccounts(roles: Record<UserRole, RoleEntity>): Promise<void> {
-    const operationalUsers = await this.userRepository.find({ relations: ['role'] });
-
-    for (const user of operationalUsers) {
-      const roleCode = user.role?.code;
-      if (roleCode !== UserRole.OPERARIO && roleCode !== UserRole.INSPECTOR) {
-        continue;
-      }
-
-      const existing = await this.authAccountRepository.findOne({ where: { email: user.email.toLowerCase() } });
-      if (existing) {
-        if (existing.role.code !== roleCode || existing.isActive !== user.isActive) {
-          existing.role = roles[roleCode];
-          existing.isActive = user.isActive;
-          await this.authAccountRepository.save(existing);
-        }
-        continue;
-      }
-
+    if (!inspectorExists) {
       await this.authAccountRepository.save(
         this.authAccountRepository.create({
-          email: user.email.toLowerCase(),
-          password: await bcrypt.hash(user.identificationNumber, 10),
-          role: roles[roleCode],
-          isActive: user.isActive,
+          email: 'inspector@example.com',
+          password: hashedPassword,
+          role: roles[UserRole.INSPECTOR],
+          isActive: true,
+        }),
+      );
+    }
+
+    if (!operarioExists) {
+      await this.authAccountRepository.save(
+        this.authAccountRepository.create({
+          email: 'operario@example.com',
+          password: hashedPassword,
+          role: roles[UserRole.OPERARIO],
+          isActive: true,
         }),
       );
     }
   }
+
 }
