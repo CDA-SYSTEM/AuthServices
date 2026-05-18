@@ -65,12 +65,26 @@ export class AddIdentificationTypesTable10031763300000000 implements MigrationIn
 
         if (oldCol) {
           await queryRunner.query(`
+            INSERT INTO identification_types (name)
+            SELECT DISTINCT users."${oldCol}"::text
+            FROM users
+            WHERE users."${oldCol}"::text IS NOT NULL
+              AND users."${oldCol}"::text NOT IN (SELECT name FROM identification_types)
+          `);
+
+          await queryRunner.query(`
             UPDATE users
             SET identification_type_id = it.id
             FROM identification_types it
-            WHERE it.name = users.${oldCol}
+            WHERE it.name = users."${oldCol}"::text
           `);
         }
+
+        await queryRunner.query(`
+          UPDATE users
+          SET identification_type_id = (SELECT id FROM identification_types WHERE name = 'CC')
+          WHERE identification_type_id IS NULL
+        `);
 
         await queryRunner.changeColumn(
           'users',
