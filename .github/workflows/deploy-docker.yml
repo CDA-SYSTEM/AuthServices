@@ -78,6 +78,7 @@ jobs:
               -e DB_PORT="${{ secrets.DB_PORT }}" \
               -e DB_USER="${{ secrets.DB_USER }}" \
               -e DB_PASSWORD="${{ secrets.DB_PASSWORD }}" \
+              -e API_KEY="${{ secrets.API_KEY }}" \
               -e DB_NAME="${{ secrets.DB_NAME }}" \
               -e DB_LOGGING="${{ secrets.DB_LOGGING }}" \
               --restart unless-stopped \
