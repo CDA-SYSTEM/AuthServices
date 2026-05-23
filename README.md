@@ -2,185 +2,189 @@
 
 Microservicio de autenticacion y autorizacion para el ecosistema SystemCDA.
 
-Este servicio cubre:
-- Login, refresh y logout con JWT.
-- Gestion de usuarios operativos (operario e inspector).
-- Control de acceso por rol para integracion con API Gateway.
-- Validacion de acceso a modulos (recepcion y checklists NTC 5375).
-
 ## Stack
 
-- NestJS
-- TypeORM
-- PostgreSQL
-- Redis
-- JWT (access + refresh)
+- NestJS + TypeScript
+- TypeORM + PostgreSQL
+- Redis (sesiones)
+- JWT (access + refresh tokens)
+- bcrypt (hash de contraseñas)
+- Swagger (OpenAPI)
 
-## Arquitectura
+## Arquitectura Hexagonal
 
-Estructura por capas (hexagonal):
-
-- Dominio: interfaces, puertos, DTOs y reglas de negocio.
-- Aplicacion: casos de uso.
-- Infraestructura: controladores, estrategias, persistencia.
-
-## Reglas de negocio clave
-
-- ADMIN: control total sobre usuarios operativos.
-- MANAGER: consulta, busqueda e inactivacion operativa.
-- OPERARIO e INSPECTOR: acceso funcional por modulo segun permisos.
-
-Restricciones actuales implementadas:
-- Solo ADMIN puede registrar usuarios.
-- Solo se pueden registrar roles operario e inspector.
-- Solo ADMIN puede actualizar y eliminar usuarios.
-- ADMIN y MANAGER pueden listar y buscar usuarios.
-
-## Endpoints base
-
-Prefijo global: /api
-
-Publicos:
-- POST /api/auth/login
-- POST /api/auth/refresh
-- POST /api/auth/logout
-- POST /api/auth/validate-token
-
-Protegidos (JWT + roles):
-- POST /api/auth/register
-- GET /api/auth/users
-- GET /api/auth/users/search?q=texto
-- GET /api/auth/users/:id
-- PATCH /api/auth/users/:id
-- PATCH /api/auth/users/:id/inactivate
-- DELETE /api/auth/users/:id
-
-Endpoints para listas desplegables:
-- GET /api/auth/users/inspectors
-- GET /api/auth/users/operarios
-- GET /api/auth/users/options?role=inspector
-- GET /api/auth/users/options?role=operario
-
-Acceso a modulos:
-- GET /api/auth/modules/ntc-5375/checklists
-- GET /api/auth/modules/recepcion
-
-## Integracion con otros microservicios
-
-Para que Lista de Chequeo y Recepcion muestren desplegables:
-
-- Lista de chequeo consume inspectores:
-  GET /api/auth/users/inspectors
-- Planillas de recepcion consumen operarios:
-  GET /api/auth/users/operarios
-
-Respuesta esperada (ambos):
-
-[
-  {
-    "id": "uuid",
-    "label": "Nombre Apellido",
-    "role": "inspector"
-  }
-]
-
-## Ejemplo rapido en Postman
-
-1. Login admin: POST /api/auth/login
-2. Registrar inspector/operario: POST /api/auth/register
-3. Listar dropdown: GET /api/auth/users/inspectors o GET /api/auth/users/operarios
-
-## Gestión de Base de Datos (Migraciones)
-
-### Configuración de Migraciones TypeORM
-
-Este servicio usa **migraciones versionadas** para gestionar cambios de esquema de forma controlada y reproducible.
-
-**Archivos de configuración:**
-- `src/data-source.ts`: Configuración de TypeORM para CLI de migraciones
-- `src/migrations/`: Directorio con archivos de migración numerados
-
-**Migraciones implementadas:**
-1. `1000-create-initial-schema.ts` - Crea tablas base (roles, users, auth_accounts)
-2. `1001-add-deleted-at-audit.ts` - Añade columna deletedAt para auditoría de soft-delete
-3. `1002-add-performance-indexes.ts` - Crea índices de optimización
-
-### Comandos de Migraciones
-
-```bash
-# Ejecutar migraciones pendientes
-npm run migration:run
-
-# Ver estado de migraciones (pendientes y ejecutadas)
-npm run migration:show
-npm run migration:pending
-
-# Revertir última migración
-npm run migration:revert
-
-# Crear nueva migración (después de cambiar entities)
-npm run migration:create -- src/migrations/NNNN-descripcion
+```
+src/
+├── auth/
+│   ├── domain/
+│   │   ├── dto/          → DTOs de entrada/salida
+│   │   ├── interfaces/   → Interfaces de dominio (User, AuthAccount, Role)
+│   │   └── ports/        → Puertos de repositorio (contratos)
+│   ├── application/
+│   │   ├── services/     → Servicios de aplicacion (AuthService)
+│   │   └── use-cases/    → Casos de uso
+│   └── infrastructure/
+│       ├── controllers/  → Controladores REST
+│       ├── persistence/  → Adaptadores de repositorio (TypeORM)
+│       └── seeds/        → Semillas de datos iniciales
+├── common/               → Codigo compartido (guards, decorators, enums)
+├── redis/                → Modulo Redis
+├── cache/                → Modulo Cache
+└── migrations/           → Migraciones versionadas
 ```
 
-### Workflow en Desarrollo
+## Reglas de negocio
 
-1. **Cambiar una entidad TypeORM** (agregar/modificar columnas):
-   ```typescript
-   @Column({ type: 'varchar', length: 100 })
-   newField!: string;
-   ```
+| Rol | Permisos |
+|-----|----------|
+| ADMIN | Control total: CRUD usuarios, reset passwords, registro personal |
+| MANAGER | Consulta, busqueda, inactivacion, reset passwords |
+| INSPECTOR | Acceso a modulo checklists NTC 5375 |
+| OPERARIO | Acceso a modulo recepcion |
 
-2. **Generar migración automáticamente**:
-   ```bash
-   npm run migration:create -- src/migrations/1003-add-new-field
-   ```
+Restricciones:
+- Solo ADMIN puede registrar personal y actualizar/eliminar usuarios
+- ADMIN y MANAGER pueden listar, buscar, inactivar y resetear passwords
+- Solo se pueden registrar roles `inspector` y `operario`
+- Toda request externa requiere header `x-api-key` (validado por `ApiKeyGuard` global)
 
-3. **Ejecutar migraciones locales**:
-   ```bash
-   npm run migration:run
-   ```
+## Endpoints
 
-4. **Probar cambios** en desarrollo:
-   ```bash
-   npm run start:dev
-   ```
+Prefijo global: `/api`
 
-5. **Commitear archivos de migración** (importante para reproducibilidad):
-   ```bash
-   git add src/migrations/1003-*.ts
-   git commit -m "feat: add new field with migration"
-   ```
+### Autenticación (públicos)
 
-### Deployment / Producción
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| POST | `/auth/login` | Iniciar sesion (email + password) |
+| POST | `/auth/refresh` | Refrescar token JWT |
+| POST | `/auth/logout` | Cerrar sesion (invalida refresh token) |
+| POST | `/auth/validate-token` | Validar access token |
 
-En producción, las migraciones se ejecutan automáticamente:
+### Perfil y Contraseña (JWT)
 
-```bash
-# En CI/CD o antes de npm run start:prod:
-npm run migration:run
+| Método | Ruta | Descripción | Roles |
+|--------|------|-------------|-------|
+| GET | `/auth/me` | Perfil del usuario autenticado | Cualquiera autenticado |
+| PATCH | `/auth/change-password` | Cambiar propia contraseña | Cualquiera autenticado |
 
-# Luego iniciar el servicio
-npm run start:prod
+### Gestión de Usuarios (JWT + roles)
+
+| Método | Ruta | Descripción | Roles |
+|--------|------|-------------|-------|
+| GET | `/auth/users` | Listar usuarios operativos | ADMIN, MANAGER |
+| GET | `/auth/users/search?q=` | Buscar usuarios por nombre/doc/email | ADMIN, MANAGER |
+| GET | `/auth/users/:id` | Detalle de usuario | ADMIN, MANAGER |
+| PATCH | `/auth/users/:id` | Actualizar usuario | ADMIN |
+| PATCH | `/auth/users/:id/inactivate` | Desactivar usuario | ADMIN, MANAGER |
+| DELETE | `/auth/users/:id` | Soft-delete usuario | ADMIN |
+
+### Dropdowns (JWT)
+
+| Método | Ruta | Descripción | Roles |
+|--------|------|-------------|-------|
+| GET | `/auth/users/inspectors` | Inspectores para selectores | ADMIN, MANAGER, OPERARIO, INSPECTOR |
+| GET | `/auth/users/operarios` | Operarios para selectores | ADMIN, MANAGER, OPERARIO, INSPECTOR |
+| GET | `/auth/users/options?role=` | Opciones por rol | ADMIN, MANAGER, OPERARIO, INSPECTOR |
+
+### Administración (JWT + roles)
+
+| Método | Ruta | Descripción | Roles |
+|--------|------|-------------|-------|
+| POST | `/admin/personnel/register` | Registrar inspector/operario | ADMIN |
+| PATCH | `/admin/personnel/:id/reset-password` | Resetear password de auth_account | ADMIN, MANAGER |
+| GET | `/admin/personnel/auth-accounts` | Listar cuentas de autenticacion | ADMIN, MANAGER |
+
+### Listados de Referencia (JWT + roles)
+
+| Método | Ruta | Descripción | Roles |
+|--------|------|-------------|-------|
+| GET | `/auth/roles` | Listar roles del sistema | ADMIN, MANAGER |
+| GET | `/auth/identification-types` | Listar tipos de identificacion | ADMIN, MANAGER |
+
+### Acceso a Módulos (JWT)
+
+| Método | Ruta | Descripción | Roles |
+|--------|------|-------------|-------|
+| GET | `/auth/modules/ntc-5375/checklists` | Verificar acceso a checklists | ADMIN, MANAGER, INSPECTOR |
+| GET | `/auth/modules/recepcion` | Verificar acceso a recepcion | ADMIN, MANAGER, OPERARIO, INSPECTOR |
+
+### Cache (JWT + ADMIN)
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| POST | `/cache` | Guardar lista en cache |
+| GET | `/cache/:key` | Obtener lista de cache |
+| DELETE | `/cache/:key` | Eliminar lista de cache |
+
+## Autenticación y Seguridad
+
+### API Key Global
+- Header requerido en TODAS las requests: `x-api-key`
+- Configurado via variable de entorno `API_KEY`
+- Excepcion: rutas de Swagger docs (`/api/docs`, `/api/swagger-ui/*`, `/api/swagger-json`)
+
+### JWT
+- Access token: corta duracion (configurable via `JWT_ACCESS_EXPIRATION`)
+- Refresh token: larga duracion, almacenado en Redis
+- Envio via header: `Authorization: Bearer <token>`
+
+### Sesiones en Redis
+- Almacenadas con prefijo `auth:session:user:<userId>`
+- Invalidacion automatica al cambiar/resetear password
+- Estructura: `{ refreshToken, role, email }`
+
+## Base de Datos
+
+### Tablas principales
+- `users` — Personal operativo registrado (inspectors/operarios)
+- `auth_accounts` — Cuentas de autenticacion (admin, manager, seed accounts)
+- `roles` — Roles del sistema (admin, manager, inspector, operario)
+- `identification_types` — Tipos de identificacion (CC, CE, TI)
+
+### Cuentas semilla
+| Email | Password | Rol |
+|-------|----------|-----|
+| admin@example.com | 1234 | ADMIN |
+| manager@example.com | 1234 | MANAGER |
+| inspector@example.com | 1234 | INSPECTOR |
+| operario@example.com | 1234 | OPERARIO |
+
+### Migraciones
+```
+src/migrations/
+├── 1000-create-initial-schema.ts
+├── 1001-add-deleted-at-audit.ts
+├── 1002-add-performance-indexes.ts
+└── 1003-add-identification-types-table.ts
 ```
 
-**Importante:** NUNCA usar `synchronize: true` en producción. Las migraciones son la única forma segura de actualizar esquema.
+Comandos:
+```bash
+npm run migration:run    # Ejecutar pendientes
+npm run migration:show   # Ver estado
+npm run migration:revert # Revertir ultima
+```
 
-### Buenas Prácticas de Migraciones
+## Variables de Entorno (.env)
 
-✅ **Hacer:**
-- Crear columnas nuevas con valores DEFAULT
-- Hacer migraciones idempotentes (ejecutar 2 veces = mismo resultado)
-- Incluir comentarios explicativos en migraciones complejas
-- Probar rollback: `npm run migration:revert` antes de commitear
-- Una migración = un cambio lógico (no mezclar múltiples cambios)
-
-❌ **Evitar:**
-- Eliminar columnas en migraciones (guardar para versión major)
-- Cambiar tipos de datos sin migración intermedia
-- Usar `synchronize: true` en cualquier entorno que no sea desarrollo local
-- Migraciones muy grandes con múltiples cambios sin relación
+```
+API_KEY=change-me-to-a-secure-api-key
+JWT_ACCESS_SECRET=...
+JWT_REFRESH_SECRET=...
+JWT_ACCESS_EXPIRATION=15m
+JWT_REFRESH_EXPIRATION=7d
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=postgres
+DB_PASSWORD=...
+DB_NAME=auth_service
+REDIS_HOST=localhost
+REDIS_PORT=6379
+```
 
 ## Documentacion
 
-- Ver guia funcional completa en USER_MANAGEMENT_GUIDE.md
-- Ver instalacion rapida en MIGRATION_SETUP.md
+- `USER_MANAGEMENT_GUIDE.md` — Guia funcional de gestion de usuarios
+- `MIGRATION_SETUP.md` — Instalacion rapida de migraciones
+- `postman/Auth Service.postman_collection.json` — Coleccion Postman (28 endpoints)

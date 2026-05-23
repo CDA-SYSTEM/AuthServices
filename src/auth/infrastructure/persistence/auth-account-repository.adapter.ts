@@ -12,6 +12,14 @@ export class AuthAccountRepositoryAdapter implements AuthAccountRepositoryPort {
     private readonly authAccountRepository: Repository<AuthAccountEntity>,
   ) {}
 
+  async findAll(): Promise<AuthAccount[]> {
+    const entities = await this.authAccountRepository.find({
+      relations: ['role'],
+      order: { createdAt: 'DESC' },
+    });
+    return entities.map((entity) => this.mapToAuthAccount(entity));
+  }
+
   async findById(id: string): Promise<AuthAccount | null> {
     const entity = await this.authAccountRepository.findOne({ where: { id, isActive: true } });
     return entity ? this.mapToAuthAccount(entity) : null;
@@ -23,6 +31,10 @@ export class AuthAccountRepositoryAdapter implements AuthAccountRepositoryPort {
     });
 
     return entity ? this.mapToAuthAccountWithPassword(entity) : null;
+  }
+
+  async updatePassword(id: string, hashedPassword: string): Promise<void> {
+    await this.authAccountRepository.update(id, { password: hashedPassword });
   }
 
   private mapToAuthAccount(entity: AuthAccountEntity): AuthAccount {

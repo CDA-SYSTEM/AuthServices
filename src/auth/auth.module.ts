@@ -29,6 +29,9 @@ import { RoleRepositoryAdapter } from './infrastructure/persistence/role-reposit
 import { GetIdentificationTypesUseCase } from './application/use-cases/get-identification-types.use-case';
 import { IDENTIFICATION_TYPE_REPOSITORY } from './domain/ports/identification-type-repository.port';
 import { IdentificationTypeRepositoryAdapter } from './infrastructure/persistence/identification-type-repository.adapter';
+import { ChangePasswordUseCase } from './application/use-cases/change-password.use-case';
+import { ResetPasswordUseCase } from './application/use-cases/reset-password.use-case';
+import { GetAuthAccountsUseCase } from './application/use-cases/get-auth-accounts.use-case';
 
 @Module({
   imports: [
@@ -49,6 +52,9 @@ import { IdentificationTypeRepositoryAdapter } from './infrastructure/persistenc
     DeleteUserUseCase,
     GetRolesUseCase,
     GetIdentificationTypesUseCase,
+    ChangePasswordUseCase,
+    ResetPasswordUseCase,
+    GetAuthAccountsUseCase,
     UserSeedService,
     RolesGuard,
     UserRepositoryAdapter,

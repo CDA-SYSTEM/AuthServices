@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Patch, Post, Query, Request, BadRequestException, Param, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Inject, NotFoundException, Patch, Post, Query, Request, BadRequestException, Param, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { LoginDto } from '../../../common/domain/dto/login.dto';
@@ -27,6 +27,9 @@ import { Role } from '../../domain/interfaces/role.interface';
 import { IdentificationTypeResponseDto } from '../../domain/dto/identification-type-response.dto';
 import { GetIdentificationTypesUseCase } from '../../application/use-cases/get-identification-types.use-case';
 import { ErrorResponseDto } from '../../../common/domain/dto/error-response.dto';
+import { ChangePasswordDto } from '../../domain/dto/change-password.dto';
+import { ChangePasswordUseCase } from '../../application/use-cases/change-password.use-case';
+import { AUTH_ACCOUNT_REPOSITORY, AuthAccountRepositoryPort } from '../../domain/ports/auth-account-repository.port';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -41,6 +44,9 @@ export class AuthController {
     private readonly deleteUserUseCase: DeleteUserUseCase,
     private readonly getRolesUseCase: GetRolesUseCase,
     private readonly getIdentificationTypesUseCase: GetIdentificationTypesUseCase,
+    private readonly changePasswordUseCase: ChangePasswordUseCase,
+    @Inject(AUTH_ACCOUNT_REPOSITORY)
+    private readonly authAccountRepository: AuthAccountRepositoryPort,
   ) {}
 
   @Post('login')
@@ -599,6 +605,131 @@ export class AuthController {
   })
   getIdentificationTypes(): Promise<any[]> {
     return this.getIdentificationTypesUseCase.execute();
+  }
+
+  @Get('me')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth('bearer')
+  @ApiOperation({
+    summary: 'Obtener perfil del usuario autenticado',
+    description: 'Retorna la informacion del usuario autenticado a partir del token JWT.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Perfil del usuario (admin/manager desde auth_accounts retorna campos basicos; personal registrado retorna datos completos)',
+    type: UserResponseDto,
+    content: {
+      'application/json': {
+        examples: {
+          fullProfile: {
+            summary: 'Personal registrado (inspector/operario)',
+            value: {
+              id: '8f1d0e2c-8d69-4be2-a1f2-2b5ad497f44a',
+              identificationType: 'cc',
+              identificationNumber: '1234567890',
+              firstName: 'Laura',
+              lastName: 'Gomez',
+              phoneNumber: '+573001112233',
+              email: 'laura.gomez@cda-system.com',
+              role: 'inspector',
+              isActive: true,
+              createdAt: '2026-05-16T15:20:30.000Z',
+              updatedAt: '2026-05-16T15:20:30.000Z',
+            },
+          },
+          basicProfile: {
+            summary: 'Cuenta institucional (admin/manager/inspector/operario seed)',
+            value: {
+              id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+              email: 'admin@example.com',
+              role: 'admin',
+              isActive: true,
+              createdAt: '2026-05-16T00:00:00.000Z',
+              updatedAt: '2026-05-16T00:00:00.000Z',
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'No autenticado',
+    content: {
+      'application/json': {
+        examples: {
+          unauthorized: {
+            summary: 'Token faltante o invalido',
+            value: { statusCode: 401, message: 'Unauthorized' },
+          },
+          invalidApiKey: {
+            summary: 'API key invalida',
+            value: { statusCode: 401, message: 'API Key inválida', error: 'Unauthorized' },
+          },
+        },
+      },
+    },
+  })
+  async getProfile(@Request() req: any): Promise<User | any> {
+    try {
+      return await this.findUserByIdUseCase.execute(req.user.sub);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        const account = await this.authAccountRepository.findById(req.user.sub);
+        if (!account) throw new NotFoundException('Perfil no encontrado');
+        return account;
+      }
+      throw error;
+    }
+  }
+
+  @Patch('change-password')
+  @UseGuards(AuthGuard('jwt'))
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('bearer')
+  @ApiOperation({
+    summary: 'Cambiar contraseña del usuario autenticado',
+    description: 'Permite al usuario cambiar su propia contraseña proporcionando la actual y la nueva.',
+  })
+  @ApiBody({ type: ChangePasswordDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Contraseña actualizada correctamente',
+    content: {
+      'application/json': {
+        example: { message: 'Contraseña actualizada correctamente' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Datos invalidos',
+    content: {
+      'application/json': {
+        example: { statusCode: 400, message: ['La nueva contraseña debe tener al menos 8 caracteres'], error: 'Bad Request' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Contraseña actual incorrecta o no autenticado',
+    content: {
+      'application/json': {
+        examples: {
+          wrongPassword: {
+            summary: 'Contraseña actual incorrecta',
+            value: { statusCode: 401, message: 'Contraseña actual incorrecta', error: 'Unauthorized' },
+          },
+          invalidApiKey: {
+            summary: 'API key invalida',
+            value: { statusCode: 401, message: 'API Key inválida', error: 'Unauthorized' },
+          },
+        },
+      },
+    },
+  })
+  changePassword(@Body() dto: ChangePasswordDto, @Request() req: any): Promise<{ message: string }> {
+    return this.changePasswordUseCase.execute(dto, req.user);
   }
 
   private mapUsersToOptions(users: User[]): UserOptionResponseDto[] {
