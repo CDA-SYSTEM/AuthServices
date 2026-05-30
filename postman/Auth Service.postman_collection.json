@@ -1,1196 +1,1320 @@
 {
-    "info":  {
-                 "_postman_id":  "9c84bd2e-c880-44a3-9f9b-fdc80f6b6436",
-                 "name":  "Auth Service - CRUD Functional",
-                 "description":  "Coleccion completa para validar endpoints de Auth Service (28 endpoints)",
-                 "schema":  "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-             },
-    "item":  [
-                 {
-                     "name":  "01 - Login Admin",
-                     "request":  {
-                                     "method":  "POST",
-                                     "header":  [
-                                                    {
-                                                        "key":  "Content-Type",
-                                                        "value":  "application/json"
-                                                    },
-                                                    {
-                                                        "key":  "x-api-key",
-                                                        "value":  "{{apiKey}}"
-                                                    }
-                                                ],
-                                     "body":  {
-                                                  "mode":  "raw",
-                                                  "raw":  "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
-                                              },
-                                     "url":  {
-                                                 "raw":  "{{baseUrl}}/auth/login",
-                                                 "host":  [
-                                                              "{{baseUrl}}"
-                                                          ],
-                                                 "path":  [
-                                                              "auth",
-                                                              "login"
-                                                          ]
-                                             }
-                                 },
-                     "event":  [
-                                   {
-                                       "listen":  "test",
-                                       "script":  {
-                                                      "type":  "text/javascript",
-                                                      "exec":  [
-                                                                   "pm.test(\u0027Status code is 200\u0027, function () { pm.response.to.have.status(200); });",
-                                                                   "const json = pm.response.json();",
-                                                                   "pm.collectionVariables.set(\u0027adminAccessToken\u0027, json.accessToken || \u0027\u0027);",
-                                                                   "pm.collectionVariables.set(\u0027adminRefreshToken\u0027, json.refreshToken || \u0027\u0027);"
-                                                               ]
-                                                  }
-                                   }
-                               ]
-                 },
-                 {
-                     "name":  "02 - Login Manager",
-                     "request":  {
-                                     "method":  "POST",
-                                     "header":  [
-                                                    {
-                                                        "key":  "Content-Type",
-                                                        "value":  "application/json"
-                                                    },
-                                                    {
-                                                        "key":  "x-api-key",
-                                                        "value":  "{{apiKey}}"
-                                                    }
-                                                ],
-                                     "body":  {
-                                                  "mode":  "raw",
-                                                  "raw":  "{\n  \"email\": \"{{managerEmail}}\",\n  \"password\": \"{{managerPassword}}\"\n}"
-                                              },
-                                     "url":  {
-                                                 "raw":  "{{baseUrl}}/auth/login",
-                                                 "host":  [
-                                                              "{{baseUrl}}"
-                                                          ],
-                                                 "path":  [
-                                                              "auth",
-                                                              "login"
-                                                          ]
-                                             }
-                                 },
-                     "event":  [
-                                   {
-                                       "listen":  "test",
-                                       "script":  {
-                                                      "type":  "text/javascript",
-                                                      "exec":  [
-                                                                   "pm.test(\u0027Status code is 200\u0027, function () { pm.response.to.have.status(200); });",
-                                                                   "const json = pm.response.json();",
-                                                                   "pm.test(\u0027Manager login returns tokens\u0027, function () { pm.expect(json.accessToken).to.be.a(\u0027string\u0027).and.not.empty; pm.expect(json.refreshToken).to.be.a(\u0027string\u0027).and.not.empty; });",
-                                                                   "pm.collectionVariables.set(\u0027managerAccessToken\u0027, json.accessToken);",
-                                                                   "pm.collectionVariables.set(\u0027managerRefreshToken\u0027, json.refreshToken);"
-                                                               ]
-                                                  }
-                                   }
-                               ]
-                 },
-                 {
-                     "name":  "03 - Register Inspector (ADMIN)",
-                     "request":  {
-                                     "method":  "POST",
-                                     "header":  [
-                                                    {
-                                                        "key":  "Authorization",
-                                                        "value":  "Bearer {{adminAccessToken}}"
-                                                    },
-                                                    {
-                                                        "key":  "Content-Type",
-                                                        "value":  "application/json"
-                                                    },
-                                                    {
-                                                        "key":  "x-api-key",
-                                                        "value":  "{{apiKey}}"
-                                                    }
-                                                ],
-                                     "body":  {
-                                                  "mode":  "raw",
-                                                  "raw":  "{\n  \"identificationType\": \"cc\",\n  \"identificationNumber\": \"{{inspectorIdentificationNumber}}\",\n  \"firstName\": \"Laura\",\n  \"lastName\": \"Inspectora\",\n  \"phoneNumber\": \"{{inspectorPhoneNumber}}\",\n  \"email\": \"{{inspectorEmail}}\",\n  \"role\": \"inspector\"\n}"
-                                              },
-                                     "url":  {
-                                                 "raw":  "{{baseUrl}}/admin/personnel/register",
-                                                 "host":  [
-                                                              "{{baseUrl}}"
-                                                          ],
-                                                 "path":  [
-                                                              "admin",
-                                                              "personnel",
-                                                              "register"
-                                                          ]
-                                             }
-                                 },
-                     "event":  [
-                                   {
-                                       "listen":  "test",
-                                       "script":  {
-                                                      "type":  "text/javascript",
-                                                      "exec":  [
-                                                                   "const json = pm.response.json(); if (json \u0026\u0026 json.id) pm.collectionVariables.set(\u0027inspectorId\u0027, json.id);"
-                                                               ]
-                                                  }
-                                   }
-                               ]
-                 },
-                 {
-                     "name":  "04 - Register Operario (ADMIN)",
-                     "request":  {
-                                     "method":  "POST",
-                                     "header":  [
-                                                    {
-                                                        "key":  "Authorization",
-                                                        "value":  "Bearer {{adminAccessToken}}"
-                                                    },
-                                                    {
-                                                        "key":  "Content-Type",
-                                                        "value":  "application/json"
-                                                    },
-                                                    {
-                                                        "key":  "x-api-key",
-                                                        "value":  "{{apiKey}}"
-                                                    }
-                                                ],
-                                     "body":  {
-                                                  "mode":  "raw",
-                                                  "raw":  "{\n  \"identificationType\": \"cc\",\n  \"identificationNumber\": \"{{operarioIdentificationNumber}}\",\n  \"firstName\": \"Carlos\",\n  \"lastName\": \"Operario\",\n  \"phoneNumber\": \"{{operarioPhoneNumber}}\",\n  \"email\": \"{{operarioEmail}}\",\n  \"role\": \"operario\"\n}"
-                                              },
-                                     "url":  {
-                                                 "raw":  "{{baseUrl}}/admin/personnel/register",
-                                                 "host":  [
-                                                              "{{baseUrl}}"
-                                                          ],
-                                                 "path":  [
-                                                              "admin",
-                                                              "personnel",
-                                                              "register"
-                                                          ]
-                                             }
-                                 },
-                     "event":  [
-                                   {
-                                       "listen":  "prerequest",
-                                       "script":  {
-                                                      "type":  "text/javascript",
-                                                      "exec":  [
-                                                                   "const suffix = Date.now().toString();",
-                                                                   "if (!pm.collectionVariables.get(\u0027operarioIdentificationNumber\u0027)) {",
-                                                                   "  pm.collectionVariables.set(\u0027operarioIdentificationNumber\u0027, \u002722\u0027+suffix.slice(-8));",
-                                                                   "}",
-                                                                   "if (!pm.collectionVariables.get(\u0027operarioPhoneNumber\u0027)) {",
-                                                                   "  pm.collectionVariables.set(\u0027operarioPhoneNumber\u0027, \u0027301\u0027+suffix.slice(-7));",
-                                                                   "}",
-                                                                   "if (!pm.collectionVariables.get(\u0027operarioEmail\u0027)) {",
-                                                                   "  pm.collectionVariables.set(\u0027operarioEmail\u0027, \u0027operario.\u0027+suffix+\u0027@example.com\u0027);",
-                                                                   "}"
-                                                               ]
-                                                  }
-                                   },
-                                   {
-                                       "listen":  "prerequest",
-                                       "script":  {
-                                                      "type":  "text/javascript",
-                                                      "exec":  [
-                                                                   "const suffix = Date.now().toString();",
-                                                                   "if (!pm.collectionVariables.get(\u0027operarioIdentificationNumber\u0027)) { pm.collectionVariables.set(\u0027operarioIdentificationNumber\u0027, \u002722\u0027+suffix.slice(-8)); }",
-                                                                   "if (!pm.collectionVariables.get(\u0027operarioPhoneNumber\u0027)) { pm.collectionVariables.set(\u0027operarioPhoneNumber\u0027, \u0027301\u0027+suffix.slice(-7)); }",
-                                                                   "if (!pm.collectionVariables.get(\u0027operarioEmail\u0027)) { pm.collectionVariables.set(\u0027operarioEmail\u0027, \u0027operario.\u0027+suffix+\u0027@example.com\u0027); }"
-                                                               ]
-                                                  }
-                                   }
-                               ]
-                 },
-                 {
-                     "name":  "05 - Reset Password (ADMIN/MANAGER)",
-                     "request":  {
-                                     "method":  "PATCH",
-                                     "header":  [
-                                                    {
-                                                        "key":  "Authorization",
-                                                        "value":  "Bearer {{adminAccessToken}}"
-                                                    },
-                                                    {
-                                                        "key":  "Content-Type",
-                                                        "value":  "application/json"
-                                                    },
-                                                    {
-                                                        "key":  "x-api-key",
-                                                        "value":  "{{apiKey}}"
-                                                    }
-                                                ],
-                                     "body":  {
-                                                  "mode":  "raw",
-                                                  "raw":  "{\n  \"newPassword\": \"NuevaClave123!\"\n}"
-                                              },
-                                     "url":  {
-                                                 "raw":  "{{baseUrl}}/admin/personnel/{{authAccountId}}/reset-password",
-                                                 "host":  [
-                                                              "{{baseUrl}}"
-                                                          ],
-                                                 "path":  [
-                                                              "admin",
-                                                              "personnel",
-                                                              "{{authAccountId}}",
-                                                              "reset-password"
-                                                          ]
-                                             }
-                                 },
-                     "event":  [
-                                   {
-                                       "listen":  "test",
-                                       "script":  {
-                                                      "type":  "text/javascript",
-                                                      "exec":  [
-                                                                   "pm.test(\u0027Status code is 200\u0027, function () {",
-                                                                   "  pm.response.to.have.status(200);",
-                                                                   "});",
-                                                                   "const json = pm.response.json();",
-                                                                   "pm.test(\u0027Password reset confirmed\u0027, function () {",
-                                                                   "  pm.expect(json.message).to.include(\u0027restablecida\u0027);",
-                                                                   "});"
-                                                               ]
-                                                  }
-                                   }
-                               ]
-                 },
-                 {
-                     "name":  "06 - List Auth Accounts (ADMIN/MANAGER)",
-                     "request":  {
-                                     "method":  "GET",
-                                     "header":  [
-                                                    {
-                                                        "key":  "Authorization",
-                                                        "value":  "Bearer {{adminAccessToken}}"
-                                                    },
-                                                    {
-                                                        "key":  "x-api-key",
-                                                        "value":  "{{apiKey}}"
-                                                    }
-                                                ],
-                                     "url":  {
-                                                 "raw":  "{{baseUrl}}/admin/personnel/auth-accounts",
-                                                 "host":  [
-                                                              "{{baseUrl}}"
-                                                          ],
-                                                 "path":  [
-                                                              "admin",
-                                                              "personnel",
-                                                              "auth-accounts"
-                                                          ]
-                                             }
-                                 },
-                     "event":  [
-                                   {
-                                       "listen":  "test",
-                                       "script":  {
-                                                      "type":  "text/javascript",
-                                                      "exec":  [
-                                                                   "pm.test(\u0027Status 200\u0027, () =\u003e pm.response.to.have.status(200));",
-                                                                   "const json = pm.response.json();",
-                                                                   "pm.test(\u0027Returns array of auth accounts\u0027, () =\u003e {",
-                                                                   "  pm.expect(Array.isArray(json)).to.be.true;",
-                                                                   "  if (json.length \u003e 0) {",
-                                                                   "    pm.collectionVariables.set(\u0027authAccountId\u0027, json[0].id);",
-                                                                   "    pm.expect(json[0].email).to.be.a(\u0027string\u0027);",
-                                                                   "    pm.expect(json[0].role).to.be.a(\u0027string\u0027);",
-                                                                   "  }",
-                                                                   "});"
-                                                               ]
-                                                  }
-                                   }
-                               ]
-                 },
-                 {
-                     "name":  "07 - Change Password",
-                     "request":  {
-                                     "method":  "PATCH",
-                                     "header":  [
-                                                    {
-                                                        "key":  "Authorization",
-                                                        "value":  "Bearer {{adminAccessToken}}"
-                                                    },
-                                                    {
-                                                        "key":  "Content-Type",
-                                                        "value":  "application/json"
-                                                    },
-                                                    {
-                                                        "key":  "x-api-key",
-                                                        "value":  "{{apiKey}}"
-                                                    }
-                                                ],
-                                     "body":  {
-                                                  "mode":  "raw",
-                                                  "raw":  "{\n  \"currentPassword\": \"{{adminPassword}}\",\n  \"newPassword\": \"NuevaClaveAdmin123!\"\n}"
-                                              },
-                                     "url":  {
-                                                 "raw":  "{{baseUrl}}/auth/change-password",
-                                                 "host":  [
-                                                              "{{baseUrl}}"
-                                                          ],
-                                                 "path":  [
-                                                              "auth",
-                                                              "change-password"
-                                                          ]
-                                             }
-                                 },
-                     "event":  [
-                                   {
-                                       "listen":  "test",
-                                       "script":  {
-                                                      "type":  "text/javascript",
-                                                      "exec":  [
-                                                                   "pm.test(\u0027Status code is 200\u0027, function () {",
-                                                                   "  pm.response.to.have.status(200);",
-                                                                   "});",
-                                                                   "const json = pm.response.json();",
-                                                                   "pm.test(\u0027Password change confirmed\u0027, function () {",
-                                                                   "  pm.expect(json.message).to.include(\u0027actualizada\u0027);",
-                                                                   "});"
-                                                               ]
-                                                  }
-                                   }
-                               ]
-                 },
-                 {
-                     "name":  "08 - Get My Profile",
-                     "request":  {
-                                     "method":  "GET",
-                                     "header":  [
-                                                    {
-                                                        "key":  "Authorization",
-                                                        "value":  "Bearer {{adminAccessToken}}"
-                                                    },
-                                                    {
-                                                        "key":  "x-api-key",
-                                                        "value":  "{{apiKey}}"
-                                                    }
-                                                ],
-                                     "url":  {
-                                                 "raw":  "{{baseUrl}}/auth/me",
-                                                 "host":  [
-                                                              "{{baseUrl}}"
-                                                          ],
-                                                 "path":  [
-                                                              "auth",
-                                                              "me"
-                                                          ]
-                                             }
-                                 },
-                     "event":  [
-                                   {
-                                       "listen":  "test",
-                                       "script":  {
-                                                      "type":  "text/javascript",
-                                                      "exec":  [
-                                                                   "pm.test(\u0027Status code is 200\u0027, function () {",
-                                                                   "  pm.response.to.have.status(200);",
-                                                                   "});",
-                                                                   "const json = pm.response.json();",
-                                                                   "pm.test(\u0027Returns user profile\u0027, function () {",
-                                                                   "  pm.expect(json.id).to.be.a(\u0027string\u0027).and.not.empty;",
-                                                                   "  pm.expect(json.email).to.exist;",
-                                                                   "  pm.expect(json.role).to.exist;",
-                                                                   "});"
-                                                               ]
-                                                  }
-                                   }
-                               ]
-                 },
-                 {
-                     "name":  "09 - List Users (ADMIN/MANAGER)",
-                     "request":  {
-                                     "method":  "GET",
-                                     "header":  [
-                                                    {
-                                                        "key":  "Authorization",
-                                                        "value":  "Bearer {{adminAccessToken}}"
-                                                    },
-                                                    {
-                                                        "key":  "x-api-key",
-                                                        "value":  "{{apiKey}}"
-                                                    }
-                                                ],
-                                     "url":  {
-                                                 "raw":  "{{baseUrl}}/auth/users?role=operario",
-                                                 "host":  [
-                                                              "{{baseUrl}}"
-                                                          ],
-                                                 "path":  [
-                                                              "auth",
-                                                              "users"
-                                                          ],
-                                                 "query":  [
-                                                               {
-                                                                   "key":  "role",
-                                                                   "value":  "operario"
-                                                               }
-                                                           ]
-                                             }
-                                 },
-                     "event":  [
-                                   {
-                                       "listen":  "test",
-                                       "script":  {
-                                                      "type":  "text/javascript",
-                                                      "exec":  [
-                                                                   "pm.test(\u0027Status 200\u0027, () =\u003e pm.response.to.have.status(200));"
-                                                               ]
-                                                  }
-                                   }
-                               ]
-                 },
-                 {
-                     "name":  "10 - Get User By ID",
-                     "request":  {
-                                     "method":  "GET",
-                                     "header":  [
-                                                    {
-                                                        "key":  "Authorization",
-                                                        "value":  "Bearer {{adminAccessToken}}"
-                                                    },
-                                                    {
-                                                        "key":  "x-api-key",
-                                                        "value":  "{{apiKey}}"
-                                                    }
-                                                ],
-                                     "url":  {
-                                                 "raw":  "{{baseUrl}}/auth/users/{{operarioId}}",
-                                                 "host":  [
-                                                              "{{baseUrl}}"
-                                                          ],
-                                                 "path":  [
-                                                              "auth",
-                                                              "users",
-                                                              "{{operarioId}}"
-                                                          ]
-                                             }
-                                 }
-                 },
-                 {
-                     "name":  "11 - Update User (ADMIN)",
-                     "request":  {
-                                     "method":  "PATCH",
-                                     "header":  [
-                                                    {
-                                                        "key":  "Authorization",
-                                                        "value":  "Bearer {{adminAccessToken}}"
-                                                    },
-                                                    {
-                                                        "key":  "Content-Type",
-                                                        "value":  "application/json"
-                                                    },
-                                                    {
-                                                        "key":  "x-api-key",
-                                                        "value":  "{{apiKey}}"
-                                                    }
-                                                ],
-                                     "body":  {
-                                                  "mode":  "raw",
-                                                  "raw":  "{\n  \"lastName\": \"Operario Actualizado\",\n  \"phoneNumber\": \"3009990001\",\n  \"role\": \"inspector\"\n}"
-                                              },
-                                     "url":  {
-                                                 "raw":  "{{baseUrl}}/auth/users/{{operarioId}}",
-                                                 "host":  [
-                                                              "{{baseUrl}}"
-                                                          ],
-                                                 "path":  [
-                                                              "auth",
-                                                              "users",
-                                                              "{{operarioId}}"
-                                                          ]
-                                             }
-                                 }
-                 },
-                 {
-                     "name":  "12 - Validate Token",
-                     "request":  {
-                                     "method":  "POST",
-                                     "header":  [
-                                                    {
-                                                        "key":  "Content-Type",
-                                                        "value":  "application/json"
-                                                    },
-                                                    {
-                                                        "key":  "x-api-key",
-                                                        "value":  "{{apiKey}}"
-                                                    }
-                                                ],
-                                     "body":  {
-                                                  "mode":  "raw",
-                                                  "raw":  "{\n  \"token\": \"{{adminAccessToken}}\"\n}"
-                                              },
-                                     "url":  {
-                                                 "raw":  "{{baseUrl}}/auth/validate-token",
-                                                 "host":  [
-                                                              "{{baseUrl}}"
-                                                          ],
-                                                 "path":  [
-                                                              "auth",
-                                                              "validate-token"
-                                                          ]
-                                             }
-                                 }
-                 },
-                 {
-                     "name":  "13 - Refresh Token",
-                     "request":  {
-                                     "method":  "POST",
-                                     "header":  [
-                                                    {
-                                                        "key":  "Content-Type",
-                                                        "value":  "application/json"
-                                                    },
-                                                    {
-                                                        "key":  "x-api-key",
-                                                        "value":  "{{apiKey}}"
-                                                    }
-                                                ],
-                                     "body":  {
-                                                  "mode":  "raw",
-                                                  "raw":  "{\n  \"refreshToken\": \"{{adminRefreshToken}}\"\n}"
-                                              },
-                                     "url":  {
-                                                 "raw":  "{{baseUrl}}/auth/refresh",
-                                                 "host":  [
-                                                              "{{baseUrl}}"
-                                                          ],
-                                                 "path":  [
-                                                              "auth",
-                                                              "refresh"
-                                                          ]
-                                             }
-                                 },
-                     "event":  [
-                                   {
-                                       "listen":  "test",
-                                       "script":  {
-                                                      "type":  "text/javascript",
-                                                      "exec":  [
-                                                                   "const json = pm.response.json(); pm.collectionVariables.set(\u0027adminAccessToken\u0027, json.accessToken || \u0027\u0027); pm.collectionVariables.set(\u0027adminRefreshToken\u0027, json.refreshToken || \u0027\u0027);"
-                                                               ]
-                                                  }
-                                   }
-                               ]
-                 },
-                 {
-                     "name":  "14 - Search Users",
-                     "request":  {
-                                     "method":  "GET",
-                                     "header":  [
-                                                    {
-                                                        "key":  "Authorization",
-                                                        "value":  "Bearer {{adminAccessToken}}"
-                                                    },
-                                                    {
-                                                        "key":  "x-api-key",
-                                                        "value":  "{{apiKey}}"
-                                                    }
-                                                ],
-                                     "url":  {
-                                                 "raw":  "{{baseUrl}}/auth/users/search?q=operario",
-                                                 "host":  [
-                                                              "{{baseUrl}}"
-                                                          ],
-                                                 "path":  [
-                                                              "auth",
-                                                              "users",
-                                                              "search"
-                                                          ],
-                                                 "query":  [
-                                                               {
-                                                                   "key":  "q",
-                                                                   "value":  "operario"
-                                                               }
-                                                           ]
-                                             }
-                                 }
-                 },
-                 {
-                     "name":  "15 - Login Inspector (Created User)",
-                     "request":  {
-                                     "method":  "POST",
-                                     "header":  [
-                                                    {
-                                                        "key":  "Content-Type",
-                                                        "value":  "application/json"
-                                                    },
-                                                    {
-                                                        "key":  "x-api-key",
-                                                        "value":  "{{apiKey}}"
-                                                    }
-                                                ],
-                                     "body":  {
-                                                  "mode":  "raw",
-                                                  "raw":  "{\n  \"email\": \"{{inspectorEmail}}\",\n  \"password\": \"{{inspectorIdentificationNumber}}\"\n}"
-                                              },
-                                     "url":  {
-                                                 "raw":  "{{baseUrl}}/auth/login",
-                                                 "host":  [
-                                                              "{{baseUrl}}"
-                                                          ],
-                                                 "path":  [
-                                                              "auth",
-                                                              "login"
-                                                          ]
-                                             }
-                                 },
-                     "event":  [
-                                   {
-                                       "listen":  "test",
-                                       "script":  {
-                                                      "type":  "text/javascript",
-                                                      "exec":  [
-                                                                   "pm.test(\u0027Status code is 200\u0027, function () { pm.response.to.have.status(200); });",
-                                                                   "const json = pm.response.json();",
-                                                                   "pm.test(\u0027Inspector login returns tokens\u0027, function () { pm.expect(json.accessToken).to.be.a(\u0027string\u0027).and.not.empty; pm.expect(json.refreshToken).to.be.a(\u0027string\u0027).and.not.empty; });",
-                                                                   "pm.collectionVariables.set(\u0027inspectorAccessToken\u0027, json.accessToken);",
-                                                                   "pm.collectionVariables.set(\u0027inspectorRefreshToken\u0027, json.refreshToken);"
-                                                               ]
-                                                  }
-                                   }
-                               ]
-                 },
-                 {
-                     "name":  "16 - NTC 5375 Access (INSPECTOR)",
-                     "request":  {
-                                     "method":  "GET",
-                                     "header":  [
-                                                    {
-                                                        "key":  "Authorization",
-                                                        "value":  "Bearer {{inspectorAccessToken}}"
-                                                    },
-                                                    {
-                                                        "key":  "x-api-key",
-                                                        "value":  "{{apiKey}}"
-                                                    }
-                                                ],
-                                     "url":  {
-                                                 "raw":  "{{baseUrl}}/auth/modules/ntc-5375/checklists",
-                                                 "host":  [
-                                                              "{{baseUrl}}"
-                                                          ],
-                                                 "path":  [
-                                                              "auth",
-                                                              "modules",
-                                                              "ntc-5375",
-                                                              "checklists"
-                                                          ]
-                                             }
-                                 }
-                 },
-                 {
-                     "name":  "17 - Login Operario (Created User)",
-                     "request":  {
-                                     "method":  "POST",
-                                     "header":  [
-                                                    {
-                                                        "key":  "Content-Type",
-                                                        "value":  "application/json"
-                                                    },
-                                                    {
-                                                        "key":  "x-api-key",
-                                                        "value":  "{{apiKey}}"
-                                                    }
-                                                ],
-                                     "body":  {
-                                                  "mode":  "raw",
-                                                  "raw":  "{\n  \"email\": \"{{operarioEmail}}\",\n  \"password\": \"{{operarioIdentificationNumber}}\"\n}"
-                                              },
-                                     "url":  {
-                                                 "raw":  "{{baseUrl}}/auth/login",
-                                                 "host":  [
-                                                              "{{baseUrl}}"
-                                                          ],
-                                                 "path":  [
-                                                              "auth",
-                                                              "login"
-                                                          ]
-                                             }
-                                 },
-                     "event":  [
-                                   {
-                                       "listen":  "test",
-                                       "script":  {
-                                                      "type":  "text/javascript",
-                                                      "exec":  [
-                                                                   "pm.test(\u0027Status code is 200\u0027, function () { pm.response.to.have.status(200); });",
-                                                                   "const json = pm.response.json();",
-                                                                   "pm.test(\u0027Operario login returns tokens\u0027, function () { pm.expect(json.accessToken).to.be.a(\u0027string\u0027).and.not.empty; pm.expect(json.refreshToken).to.be.a(\u0027string\u0027).and.not.empty; });",
-                                                                   "pm.collectionVariables.set(\u0027operarioAccessToken\u0027, json.accessToken);",
-                                                                   "pm.collectionVariables.set(\u0027operarioRefreshToken\u0027, json.refreshToken);"
-                                                               ]
-                                                  }
-                                   }
-                               ]
-                 },
-                 {
-                     "name":  "18 - Recepcion Access (OPERARIO)",
-                     "request":  {
-                                     "method":  "GET",
-                                     "header":  [
-                                                    {
-                                                        "key":  "Authorization",
-                                                        "value":  "Bearer {{operarioAccessToken}}"
-                                                    },
-                                                    {
-                                                        "key":  "x-api-key",
-                                                        "value":  "{{apiKey}}"
-                                                    }
-                                                ],
-                                     "url":  {
-                                                 "raw":  "{{baseUrl}}/auth/modules/recepcion",
-                                                 "host":  [
-                                                              "{{baseUrl}}"
-                                                          ],
-                                                 "path":  [
-                                                              "auth",
-                                                              "modules",
-                                                              "recepcion"
-                                                          ]
-                                             }
-                                 }
-                 },
-                 {
-                     "name":  "19 - List Roles (ADMIN/MANAGER)",
-                     "request":  {
-                                     "method":  "GET",
-                                     "header":  [
-                                                    {
-                                                        "key":  "Authorization",
-                                                        "value":  "Bearer {{adminAccessToken}}"
-                                                    },
-                                                    {
-                                                        "key":  "x-api-key",
-                                                        "value":  "{{apiKey}}"
-                                                    }
-                                                ],
-                                     "url":  {
-                                                 "raw":  "{{baseUrl}}/auth/roles",
-                                                 "host":  [
-                                                              "{{baseUrl}}"
-                                                          ],
-                                                 "path":  [
-                                                              "auth",
-                                                              "roles"
-                                                          ]
-                                             },
-                                     "event":  [
-                                                   {
-                                                       "listen":  "test",
-                                                       "script":  {
-                                                                      "type":  "text/javascript",
-                                                                      "exec":  [
-                                                                                   "pm.test(\u0027Status 200\u0027, () =\u003e pm.response.to.have.status(200));"
-                                                                               ]
-                                                                  }
-                                                   }
-                                               ]
-                                 }
-                 },
-                 {
-                     "name":  "20 - List Identification Types (ADMIN/MANAGER)",
-                     "request":  {
-                                     "method":  "GET",
-                                     "header":  [
-                                                    {
-                                                        "key":  "Authorization",
-                                                        "value":  "Bearer {{adminAccessToken}}"
-                                                    },
-                                                    {
-                                                        "key":  "x-api-key",
-                                                        "value":  "{{apiKey}}"
-                                                    }
-                                                ],
-                                     "url":  {
-                                                 "raw":  "{{baseUrl}}/auth/identification-types",
-                                                 "host":  [
-                                                              "{{baseUrl}}"
-                                                          ],
-                                                 "path":  [
-                                                              "auth",
-                                                              "identification-types"
-                                                          ]
-                                             }
-                                 }
-                 },
-                 {
-                     "name":  "21 - Inactivate User (ADMIN/MANAGER)",
-                     "request":  {
-                                     "method":  "PATCH",
-                                     "header":  [
-                                                    {
-                                                        "key":  "Authorization",
-                                                        "value":  "Bearer {{managerAccessToken}}"
-                                                    },
-                                                    {
-                                                        "key":  "x-api-key",
-                                                        "value":  "{{apiKey}}"
-                                                    }
-                                                ],
-                                     "url":  {
-                                                 "raw":  "{{baseUrl}}/auth/users/{{operarioId}}/inactivate",
-                                                 "host":  [
-                                                              "{{baseUrl}}"
-                                                          ],
-                                                 "path":  [
-                                                              "auth",
-                                                              "users",
-                                                              "{{operarioId}}",
-                                                              "inactivate"
-                                                          ]
-                                             }
-                                 }
-                 },
-                 {
-                     "name":  "22 - Delete User (ADMIN)",
-                     "request":  {
-                                     "method":  "DELETE",
-                                     "header":  [
-                                                    {
-                                                        "key":  "Authorization",
-                                                        "value":  "Bearer {{adminAccessToken}}"
-                                                    },
-                                                    {
-                                                        "key":  "x-api-key",
-                                                        "value":  "{{apiKey}}"
-                                                    }
-                                                ],
-                                     "url":  {
-                                                 "raw":  "{{baseUrl}}/auth/users/{{operarioId}}",
-                                                 "host":  [
-                                                              "{{baseUrl}}"
-                                                          ],
-                                                 "path":  [
-                                                              "auth",
-                                                              "users",
-                                                              "{{operarioId}}"
-                                                          ]
-                                             }
-                                 }
-                 },
-                 {
-                     "name":  "23 - Dropdown Inspectors",
-                     "request":  {
-                                     "method":  "GET",
-                                     "header":  [
-                                                    {
-                                                        "key":  "Authorization",
-                                                        "value":  "Bearer {{managerAccessToken}}"
-                                                    },
-                                                    {
-                                                        "key":  "x-api-key",
-                                                        "value":  "{{apiKey}}"
-                                                    }
-                                                ],
-                                     "url":  {
-                                                 "raw":  "{{baseUrl}}/auth/users/inspectors",
-                                                 "host":  [
-                                                              "{{baseUrl}}"
-                                                          ],
-                                                 "path":  [
-                                                              "auth",
-                                                              "users",
-                                                              "inspectors"
-                                                          ]
-                                             },
-                                     "event":  [
-                                                   {
-                                                       "listen":  "test",
-                                                       "script":  {
-                                                                      "type":  "text/javascript",
-                                                                      "exec":  [
-                                                                                   "pm.test(\u0027Status 200\u0027, () =\u003e pm.response.to.have.status(200)); const json = pm.response.json(); pm.test(\u0027Response is array\u0027, () =\u003e pm.expect(Array.isArray(json)).to.be.true);"
-                                                                               ]
-                                                                  }
-                                                   }
-                                               ]
-                                 }
-                 },
-                 {
-                     "name":  "24 - Dropdown Operarios",
-                     "request":  {
-                                     "method":  "GET",
-                                     "header":  [
-                                                    {
-                                                        "key":  "Authorization",
-                                                        "value":  "Bearer {{managerAccessToken}}"
-                                                    },
-                                                    {
-                                                        "key":  "x-api-key",
-                                                        "value":  "{{apiKey}}"
-                                                    }
-                                                ],
-                                     "url":  {
-                                                 "raw":  "{{baseUrl}}/auth/users/operarios",
-                                                 "host":  [
-                                                              "{{baseUrl}}"
-                                                          ],
-                                                 "path":  [
-                                                              "auth",
-                                                              "users",
-                                                              "operarios"
-                                                          ]
-                                             }
-                                 }
-                 },
-                 {
-                     "name":  "25 - Logout Admin",
-                     "request":  {
-                                     "method":  "POST",
-                                     "header":  [
-                                                    {
-                                                        "key":  "Content-Type",
-                                                        "value":  "application/json"
-                                                    },
-                                                    {
-                                                        "key":  "x-api-key",
-                                                        "value":  "{{apiKey}}"
-                                                    }
-                                                ],
-                                     "body":  {
-                                                  "mode":  "raw",
-                                                  "raw":  "{\n  \"refreshToken\": \"{{adminRefreshToken}}\"\n}"
-                                              },
-                                     "url":  {
-                                                 "raw":  "{{baseUrl}}/auth/logout",
-                                                 "host":  [
-                                                              "{{baseUrl}}"
-                                                          ],
-                                                 "path":  [
-                                                              "auth",
-                                                              "logout"
-                                                          ]
-                                             }
-                                 },
-                     "event":  [
-                                   {
-                                       "listen":  "test",
-                                       "script":  {
-                                                      "type":  "text/javascript",
-                                                      "exec":  [
-                                                                   "pm.test(\u0027Status 200\u0027, () =\u003e pm.response.to.have.status(200)); pm.collectionVariables.set(\u0027adminAccessToken\u0027,\u0027\u0027); pm.collectionVariables.set(\u0027adminRefreshToken\u0027,\u0027\u0027);"
-                                                               ]
-                                                  }
-                                   }
-                               ]
-                 },
-                 {
-                     "name":  "26 - Cache Save List",
-                     "request":  {
-                                     "method":  "POST",
-                                     "header":  [
-                                                    {
-                                                        "key":  "Authorization",
-                                                        "value":  "Bearer {{adminAccessToken}}"
-                                                    },
-                                                    {
-                                                        "key":  "Content-Type",
-                                                        "value":  "application/json"
-                                                    },
-                                                    {
-                                                        "key":  "x-api-key",
-                                                        "value":  "{{apiKey}}"
-                                                    }
-                                                ],
-                                     "body":  {
-                                                  "mode":  "raw",
-                                                  "raw":  "{\n  \"key\": \"{{cacheKey}}\",\n  \"value\": {{cachePayload}},\n  \"ttlSeconds\": {{cacheTtlSeconds}}\n}"
-                                              },
-                                     "url":  {
-                                                 "raw":  "{{baseUrl}}/cache",
-                                                 "host":  [
-                                                              "{{baseUrl}}"
-                                                          ],
-                                                 "path":  [
-                                                              "cache"
-                                                          ]
-                                             }
-                                 },
-                     "event":  [
-                                   {
-                                       "listen":  "test",
-                                       "script":  {
-                                                      "type":  "text/javascript",
-                                                      "exec":  [
-                                                                   "pm.test(\u0027Status 201 or 200\u0027, () =\u003e pm.expect(pm.response.code).to.be.oneOf([200,201]));"
-                                                               ]
-                                                  }
-                                   }
-                               ]
-                 },
-                 {
-                     "name":  "27 - Cache Get List",
-                     "request":  {
-                                     "method":  "GET",
-                                     "header":  [
-                                                    {
-                                                        "key":  "Authorization",
-                                                        "value":  "Bearer {{adminAccessToken}}"
-                                                    },
-                                                    {
-                                                        "key":  "x-api-key",
-                                                        "value":  "{{apiKey}}"
-                                                    }
-                                                ],
-                                     "url":  {
-                                                 "raw":  "{{baseUrl}}/cache/{{cacheKey}}",
-                                                 "host":  [
-                                                              "{{baseUrl}}"
-                                                          ],
-                                                 "path":  [
-                                                              "cache",
-                                                              "{{cacheKey}}"
-                                                          ]
-                                             }
-                                 }
-                 },
-                 {
-                     "name":  "28 - Cache Delete List",
-                     "request":  {
-                                     "method":  "DELETE",
-                                     "header":  [
-                                                    {
-                                                        "key":  "Authorization",
-                                                        "value":  "Bearer {{adminAccessToken}}"
-                                                    },
-                                                    {
-                                                        "key":  "x-api-key",
-                                                        "value":  "{{apiKey}}"
-                                                    }
-                                                ],
-                                     "url":  {
-                                                 "raw":  "{{baseUrl}}/cache/{{cacheKey}}",
-                                                 "host":  [
-                                                              "{{baseUrl}}"
-                                                          ],
-                                                 "path":  [
-                                                              "cache",
-                                                              "{{cacheKey}}"
-                                                          ]
-                                             }
-                                 }
-                 }
-             ],
-    "variable":  [
-                     {
-                         "key":  "baseUrl",
-                         "value":  "http://localhost:3001/api"
-                     },
-                     {
-                         "key":  "apiKey",
-                         "value":  "change-me-to-a-secure-api-key"
-                     },
-                     {
-                         "key":  "adminEmail",
-                         "value":  "admin@example.com"
-                     },
-                     {
-                         "key":  "adminPassword",
-                         "value":  "1234"
-                     },
-                     {
-                         "key":  "managerEmail",
-                         "value":  "manager@example.com"
-                     },
-                     {
-                         "key":  "managerPassword",
-                         "value":  "1234"
-                     },
-                     {
-                         "key":  "adminAccessToken",
-                         "value":  ""
-                     },
-                     {
-                         "key":  "adminRefreshToken",
-                         "value":  ""
-                     },
-                     {
-                         "key":  "managerAccessToken",
-                         "value":  ""
-                     },
-                     {
-                         "key":  "managerRefreshToken",
-                         "value":  ""
-                     },
-                     {
-                         "key":  "inspectorId",
-                         "value":  ""
-                     },
-                     {
-                         "key":  "operarioId",
-                         "value":  ""
-                     },
-                     {
-                         "key":  "inspectorIdentificationNumber",
-                         "value":  ""
-                     },
-                     {
-                         "key":  "inspectorPhoneNumber",
-                         "value":  ""
-                     },
-                     {
-                         "key":  "inspectorEmail",
-                         "value":  ""
-                     },
-                     {
-                         "key":  "operarioIdentificationNumber",
-                         "value":  ""
-                     },
-                     {
-                         "key":  "operarioPhoneNumber",
-                         "value":  ""
-                     },
-                     {
-                         "key":  "operarioEmail",
-                         "value":  ""
-                     },
-                     {
-                         "key":  "inspectorPassword",
-                         "value":  "Inspector123!"
-                     },
-                     {
-                         "key":  "operarioPassword",
-                         "value":  "Operario123!"
-                     },
-                     {
-                         "key":  "inspectorAccessToken",
-                         "value":  ""
-                     },
-                     {
-                         "key":  "inspectorRefreshToken",
-                         "value":  ""
-                     },
-                     {
-                         "key":  "operarioAccessToken",
-                         "value":  ""
-                     },
-                     {
-                         "key":  "operarioRefreshToken",
-                         "value":  ""
-                     },
-                     {
-                         "key":  "cacheKey",
-                         "value":  "vehicles:list:active"
-                     },
-                     {
-                         "key":  "cacheTtlSeconds",
-                         "value":  "60"
-                     },
-                     {
-                         "key":  "cachePayload",
-                         "value":  "[{\"id\":\"veh-1\",\"plate\":\"ABC123\",\"status\":\"active\"}]"
-                     },
-                     {
-                         "key":  "authAccountId",
-                         "value":  ""
-                     }
-                 ]
+  "info": {
+    "_postman_id": "9c84bd2e-c880-44a3-9f9b-fdc80f6b6436",
+    "name": "Auth Service - CRUD Functional",
+    "description": "Coleccion completa para validar endpoints de Auth Service (28 endpoints)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "00 - Login Superadmin",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{superadminEmail}}\",\n  \"password\": \"{{superadminPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "pm.collectionVariables.set('superadminAccessToken', json.accessToken || '');",
+              "pm.collectionVariables.set('superadminRefreshToken', json.refreshToken || '');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "01 - Login Admin",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "pm.collectionVariables.set('adminAccessToken', json.accessToken || '');",
+              "pm.collectionVariables.set('adminRefreshToken', json.refreshToken || '');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "01b - OAuth Login Google",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id_token\": \"{{googleIdToken}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/oauth/google",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "oauth",
+            "google"
+          ]
+        }
+      }
+    },
+    {
+      "name": "02 - Login Manager",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{managerEmail}}\",\n  \"password\": \"{{managerPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "pm.test('Manager login returns tokens', function () { pm.expect(json.accessToken).to.be.a('string').and.not.empty; pm.expect(json.refreshToken).to.be.a('string').and.not.empty; });",
+              "pm.collectionVariables.set('managerAccessToken', json.accessToken);",
+              "pm.collectionVariables.set('managerRefreshToken', json.refreshToken);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Register Inspector (ADMIN)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"identificationType\": \"cc\",\n  \"identificationNumber\": \"{{inspectorIdentificationNumber}}\",\n  \"firstName\": \"Laura\",\n  \"lastName\": \"Inspectora\",\n  \"phoneNumber\": \"{{inspectorPhoneNumber}}\",\n  \"email\": \"{{inspectorEmail}}\",\n  \"role\": \"inspector\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/admin/personnel/register",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "admin",
+            "personnel",
+            "register"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json(); if (json && json.id) pm.collectionVariables.set('inspectorId', json.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Register Operario (ADMIN)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"identificationType\": \"cc\",\n  \"identificationNumber\": \"{{operarioIdentificationNumber}}\",\n  \"firstName\": \"Carlos\",\n  \"lastName\": \"Operario\",\n  \"phoneNumber\": \"{{operarioPhoneNumber}}\",\n  \"email\": \"{{operarioEmail}}\",\n  \"role\": \"operario\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/admin/personnel/register",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "admin",
+            "personnel",
+            "register"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const suffix = Date.now().toString();",
+              "if (!pm.collectionVariables.get('operarioIdentificationNumber')) {",
+              "  pm.collectionVariables.set('operarioIdentificationNumber', '22'+suffix.slice(-8));",
+              "}",
+              "if (!pm.collectionVariables.get('operarioPhoneNumber')) {",
+              "  pm.collectionVariables.set('operarioPhoneNumber', '301'+suffix.slice(-7));",
+              "}",
+              "if (!pm.collectionVariables.get('operarioEmail')) {",
+              "  pm.collectionVariables.set('operarioEmail', 'operario.'+suffix+'@example.com');",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const suffix = Date.now().toString();",
+              "if (!pm.collectionVariables.get('operarioIdentificationNumber')) { pm.collectionVariables.set('operarioIdentificationNumber', '22'+suffix.slice(-8)); }",
+              "if (!pm.collectionVariables.get('operarioPhoneNumber')) { pm.collectionVariables.set('operarioPhoneNumber', '301'+suffix.slice(-7)); }",
+              "if (!pm.collectionVariables.get('operarioEmail')) { pm.collectionVariables.set('operarioEmail', 'operario.'+suffix+'@example.com'); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Reset Password (ADMIN/MANAGER)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"newPassword\": \"NuevaClave123!\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/admin/personnel/{{authAccountId}}/reset-password",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "admin",
+            "personnel",
+            "{{authAccountId}}",
+            "reset-password"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Password reset confirmed', function () {",
+              "  pm.expect(json.message).to.include('restablecida');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - List Auth Accounts (ADMIN/MANAGER)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/admin/personnel/auth-accounts",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "admin",
+            "personnel",
+            "auth-accounts"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('Returns array of auth accounts', () => {",
+              "  pm.expect(Array.isArray(json)).to.be.true;",
+              "  if (json.length > 0) {",
+              "    pm.collectionVariables.set('authAccountId', json[0].id);",
+              "    pm.expect(json[0].email).to.be.a('string');",
+              "    pm.expect(json[0].role).to.be.a('string');",
+              "  }",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 - Change Password",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"currentPassword\": \"{{adminPassword}}\",\n  \"newPassword\": \"NuevaClaveAdmin123!\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/change-password",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "change-password"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Password change confirmed', function () {",
+              "  pm.expect(json.message).to.include('actualizada');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 - Get My Profile",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/me",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "me"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "pm.test('Returns user profile', function () {",
+              "  pm.expect(json.id).to.be.a('string').and.not.empty;",
+              "  pm.expect(json.email).to.exist;",
+              "  pm.expect(json.role).to.exist;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 - List Users (ADMIN/MANAGER)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/users?role=operario",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "users"
+          ],
+          "query": [
+            {
+              "key": "role",
+              "value": "operario"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 - Get User By ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/users/{{operarioId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "users",
+            "{{operarioId}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "11 - Update User (ADMIN)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"lastName\": \"Operario Actualizado\",\n  \"phoneNumber\": \"3009990001\",\n  \"role\": \"inspector\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/users/{{operarioId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "users",
+            "{{operarioId}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "12 - Validate Token",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"token\": \"{{adminAccessToken}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/validate-token",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "validate-token"
+          ]
+        }
+      }
+    },
+    {
+      "name": "13 - Refresh Token",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refreshToken\": \"{{adminRefreshToken}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/refresh",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "refresh"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json(); pm.collectionVariables.set('adminAccessToken', json.accessToken || ''); pm.collectionVariables.set('adminRefreshToken', json.refreshToken || '');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "14 - Search Users",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/users/search?q=operario",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "users",
+            "search"
+          ],
+          "query": [
+            {
+              "key": "q",
+              "value": "operario"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "15 - Login Inspector (Created User)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{inspectorEmail}}\",\n  \"password\": \"{{inspectorIdentificationNumber}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "pm.test('Inspector login returns tokens', function () { pm.expect(json.accessToken).to.be.a('string').and.not.empty; pm.expect(json.refreshToken).to.be.a('string').and.not.empty; });",
+              "pm.collectionVariables.set('inspectorAccessToken', json.accessToken);",
+              "pm.collectionVariables.set('inspectorRefreshToken', json.refreshToken);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "16 - NTC 5375 Access (INSPECTOR)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{inspectorAccessToken}}"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/modules/ntc-5375/checklists",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "modules",
+            "ntc-5375",
+            "checklists"
+          ]
+        }
+      }
+    },
+    {
+      "name": "17 - Login Operario (Created User)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{operarioEmail}}\",\n  \"password\": \"{{operarioIdentificationNumber}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "pm.test('Operario login returns tokens', function () { pm.expect(json.accessToken).to.be.a('string').and.not.empty; pm.expect(json.refreshToken).to.be.a('string').and.not.empty; });",
+              "pm.collectionVariables.set('operarioAccessToken', json.accessToken);",
+              "pm.collectionVariables.set('operarioRefreshToken', json.refreshToken);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "18 - Recepcion Access (OPERARIO)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{operarioAccessToken}}"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/modules/recepcion",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "modules",
+            "recepcion"
+          ]
+        }
+      }
+    },
+    {
+      "name": "19 - List Roles (ADMIN/MANAGER)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/roles",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "roles"
+          ]
+        },
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('Status 200', () => pm.response.to.have.status(200));"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "20 - List Identification Types (ADMIN/MANAGER)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/identification-types",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "identification-types"
+          ]
+        }
+      }
+    },
+    {
+      "name": "21 - Inactivate User (ADMIN/MANAGER)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{managerAccessToken}}"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/users/{{operarioId}}/inactivate",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "users",
+            "{{operarioId}}",
+            "inactivate"
+          ]
+        }
+      }
+    },
+    {
+      "name": "22 - Delete User (ADMIN)",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/users/{{operarioId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "users",
+            "{{operarioId}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "23 - Dropdown Inspectors",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{managerAccessToken}}"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/users/inspectors",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "users",
+            "inspectors"
+          ]
+        },
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('Status 200', () => pm.response.to.have.status(200)); const json = pm.response.json(); pm.test('Response is array', () => pm.expect(Array.isArray(json)).to.be.true);"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "24 - Dropdown Operarios",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{managerAccessToken}}"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/users/operarios",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "users",
+            "operarios"
+          ]
+        }
+      }
+    },
+    {
+      "name": "24b - Users Options (Dropdown)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/users/options?role=inspector",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "users",
+            "options"
+          ],
+          "query": [
+            {
+              "key": "role",
+              "value": "inspector"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "25 - Logout Admin",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refreshToken\": \"{{adminRefreshToken}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/logout",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "logout"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', () => pm.response.to.have.status(200)); pm.collectionVariables.set('adminAccessToken',''); pm.collectionVariables.set('adminRefreshToken','');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "26 - Cache Save List",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"key\": \"{{cacheKey}}\",\n  \"value\": {{cachePayload}},\n  \"ttlSeconds\": {{cacheTtlSeconds}}\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/cache",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "cache"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 201 or 200', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "27 - Cache Get List",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/cache/{{cacheKey}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "cache",
+            "{{cacheKey}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "28 - Cache Delete List",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/cache/{{cacheKey}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "cache",
+            "{{cacheKey}}"
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001/api"
+    },
+    {
+      "key": "apiKey",
+      "value": "change-me-to-a-secure-api-key"
+    },
+    {
+      "key": "adminEmail",
+      "value": "admin@example.com"
+    },
+    {
+      "key": "adminPassword",
+      "value": "1234"
+    },
+    {
+      "key": "managerEmail",
+      "value": "manager@example.com"
+    },
+    {
+      "key": "managerPassword",
+      "value": "1234"
+    },
+    {
+      "key": "adminAccessToken",
+      "value": ""
+    },
+    {
+      "key": "adminRefreshToken",
+      "value": ""
+    },
+    {
+      "key": "managerAccessToken",
+      "value": ""
+    },
+    {
+      "key": "managerRefreshToken",
+      "value": ""
+    },
+    {
+      "key": "inspectorId",
+      "value": ""
+    },
+    {
+      "key": "operarioId",
+      "value": ""
+    },
+    {
+      "key": "inspectorIdentificationNumber",
+      "value": ""
+    },
+    {
+      "key": "inspectorPhoneNumber",
+      "value": ""
+    },
+    {
+      "key": "inspectorEmail",
+      "value": ""
+    },
+    {
+      "key": "operarioIdentificationNumber",
+      "value": ""
+    },
+    {
+      "key": "operarioPhoneNumber",
+      "value": ""
+    },
+    {
+      "key": "operarioEmail",
+      "value": ""
+    },
+    {
+      "key": "inspectorPassword",
+      "value": "Inspector123!"
+    },
+    {
+      "key": "operarioPassword",
+      "value": "Operario123!"
+    },
+    {
+      "key": "inspectorAccessToken",
+      "value": ""
+    },
+    {
+      "key": "inspectorRefreshToken",
+      "value": ""
+    },
+    {
+      "key": "operarioAccessToken",
+      "value": ""
+    },
+    {
+      "key": "operarioRefreshToken",
+      "value": ""
+    },
+    {
+      "key": "cacheKey",
+      "value": "vehicles:list:active"
+    },
+    {
+      "key": "cacheTtlSeconds",
+      "value": "60"
+    },
+    {
+      "key": "cachePayload",
+      "value": "[{\"id\":\"veh-1\",\"plate\":\"ABC123\",\"status\":\"active\"}]"
+    },
+    {
+      "key": "authAccountId",
+      "value": ""
+    },
+    {
+      "key": "superadminEmail",
+      "value": "superadmin@example.com"
+    },
+    {
+      "key": "superadminPassword",
+      "value": "1234"
+    },
+    {
+      "key": "superadminAccessToken",
+      "value": ""
+    },
+    {
+      "key": "superadminRefreshToken",
+      "value": ""
+    }
+  ]
 }

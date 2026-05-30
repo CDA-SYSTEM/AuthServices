@@ -19,4 +19,5 @@ export const envValidationSchema = Joi.object({
   DB_PASSWORD: Joi.string().required(),
   DB_NAME: Joi.string().default('auth_db'),
   DB_LOGGING: Joi.boolean().truthy('true').falsy('false').default(false),
+  GOOGLE_CLIENT_ID: Joi.string().required(),
 });

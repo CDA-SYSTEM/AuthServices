@@ -135,6 +135,55 @@ export class AuthController {
     return this.authService.login(dto);
   }
 
+  @Post('oauth/google')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Iniciar sesion o registrarse con Google OAuth 2.0',
+    description:
+      'Autentica o registra mediante Google ID token. El frontend debe obtener un id_token de Google Sign-In y enviarlo en el body. Si el email no existe en auth_accounts, se crea una cuenta nueva con rol OPERARIO y un registro en la tabla users con los datos del perfil de Google. Si ya existe, emite el JWT del sistema.',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { id_token: { type: 'string', example: 'eyJhbGciOiJSUzI1NiIs...' } },
+      required: ['id_token'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Sesion iniciada correctamente con Google',
+    type: TokenPairResponseDto,
+    content: {
+      'application/json': {
+        example: {
+          accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4ZjFkMGUyYy04ZDY5LTRiZTItYTFmMi0yYjVhZDQ5N2Y0NGEiLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3MTU4NjYwMDAsImV4cCI6MTcxNTg2OTYwMH0.signature',
+          refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4ZjFkMGUyYy04ZDY5LTRiZTItYTFmMi0yYjVhZDQ5N2Y0NGEiLCJ0eXBlIjoicmVmcmVzaCIsImlhdCI6MTcxNTg2NjAwMCwiZXhwIjoxNzE4NDU4MDAwfQ.signature',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Token de Google invalido o sin correo',
+    content: {
+      'application/json': {
+        examples: {
+          invalidToken: {
+            summary: 'Token de Google invalido',
+            value: { statusCode: 401, message: 'Token de Google invalido', error: 'Unauthorized' },
+          },
+          noEmail: {
+            summary: 'Token sin correo',
+            value: { statusCode: 401, message: 'El token de Google no contiene un correo valido', error: 'Unauthorized' },
+          },
+        },
+      },
+    },
+  })
+  async oauthGoogle(@Body('id_token') idToken: string): Promise<TokenPairResponseDto> {
+    return this.authService.oauthLoginByGoogle(idToken);
+  }
+
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({

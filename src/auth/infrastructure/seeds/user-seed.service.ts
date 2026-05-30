@@ -48,6 +48,12 @@ export class UserSeedService implements OnModuleInit {
   private async ensureRoles(): Promise<Record<UserRole, RoleEntity>> {
     const roleSeeds: RoleSeed[] = [
       {
+        code: UserRole.SUPERADMIN,
+        scope: 'Super Administrador',
+        permissions:
+          'Control total del sistema: gestión de administradores, configuración global, auditoría completa, y todos los permisos de roles inferiores.',
+      },
+      {
         code: UserRole.ADMIN,
         scope: 'Control Total',
         permissions:
@@ -91,12 +97,24 @@ export class UserSeedService implements OnModuleInit {
   }
 
   private async ensureAuthAccounts(roles: Record<UserRole, RoleEntity>): Promise<void> {
+    const superadminExists = await this.authAccountRepository.findOne({ where: { email: 'superadmin@example.com' } });
     const adminExists = await this.authAccountRepository.findOne({ where: { email: 'admin@example.com' } });
     const managerExists = await this.authAccountRepository.findOne({ where: { email: 'manager@example.com' } });
     const inspectorExists = await this.authAccountRepository.findOne({ where: { email: 'inspector@example.com' } });
     const operarioExists = await this.authAccountRepository.findOne({ where: { email: 'operario@example.com' } });
 
     const hashedPassword = await bcrypt.hash('1234', 10);
+
+    if (!superadminExists) {
+      await this.authAccountRepository.save(
+        this.authAccountRepository.create({
+          email: 'superadmin@example.com',
+          password: hashedPassword,
+          role: roles[UserRole.SUPERADMIN],
+          isActive: true,
+        }),
+      );
+    }
 
     if (!adminExists) {
       await this.authAccountRepository.save(
