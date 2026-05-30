@@ -10,8 +10,8 @@ export class DeleteUserUseCase {
   ) {}
 
   async execute(id: string, requestingUserRole: UserRole): Promise<{ message: string }> {
-    if (requestingUserRole !== UserRole.ADMIN && requestingUserRole !== UserRole.MANAGER) {
-      throw new ForbiddenException('Solo ADMIN o MANAGER pueden eliminar usuarios');
+    if (requestingUserRole !== UserRole.SUPERADMIN && requestingUserRole !== UserRole.ADMIN && requestingUserRole !== UserRole.MANAGER) {
+      throw new ForbiddenException('Solo SUPERADMIN, ADMIN o MANAGER pueden eliminar usuarios');
     }
 
     const user = await this.userRepository.findById(id);
@@ -19,7 +19,7 @@ export class DeleteUserUseCase {
       throw new NotFoundException('Usuario no encontrado');
     }
 
-    if (user.role !== UserRole.OPERARIO && user.role !== UserRole.INSPECTOR) {
+    if (requestingUserRole !== UserRole.SUPERADMIN && user.role !== UserRole.OPERARIO && user.role !== UserRole.INSPECTOR) {
       throw new ForbiddenException('Solo se pueden eliminar usuarios con rol OPERARIO o INSPECTOR');
     }
 

@@ -81,7 +81,8 @@ Prefijo global: `/api`
 | GET | `/auth/users/:id` | Detalle de usuario | ADMIN, MANAGER |
 | PATCH | `/auth/users/:id` | Actualizar usuario | ADMIN |
 | PATCH | `/auth/users/:id/inactivate` | Desactivar usuario | ADMIN, MANAGER |
-| DELETE | `/auth/users/:id` | Soft-delete usuario | ADMIN |
+| PATCH | `/auth/users/:id/role` | Cambiar rol de usuario | SUPERADMIN |
+| DELETE | `/auth/users/:id` | Soft-delete usuario | SUPERADMIN, ADMIN, MANAGER |
 
 ### Dropdowns (JWT)
 
@@ -103,8 +104,9 @@ Prefijo global: `/api`
 
 | Método | Ruta | Descripción | Roles |
 |--------|------|-------------|-------|
-| GET | `/auth/roles` | Listar roles del sistema | ADMIN, MANAGER |
-| GET | `/auth/identification-types` | Listar tipos de identificacion | ADMIN, MANAGER |
+| GET | `/auth/roles` | Listar roles del sistema | SUPERADMIN, ADMIN, MANAGER |
+| PATCH | `/auth/roles/:code` | Actualizar alcance y permisos de un rol | SUPERADMIN |
+| GET | `/auth/identification-types` | Listar tipos de identificacion | SUPERADMIN, ADMIN, MANAGER |
 
 ### Acceso a Módulos (JWT)
 
@@ -219,4 +221,4 @@ En `NODE_ENV=development`, si el `id_token` contiene un `@`, se trata como email
 
 - `USER_MANAGEMENT_GUIDE.md` — Guia funcional de gestion de usuarios
 - `MIGRATION_SETUP.md` — Instalacion rapida de migraciones
-- `postman/Auth Service.postman_collection.json` — Coleccion Postman (31 endpoints)
+- `postman/Auth Service.postman_collection.json` — Coleccion Postman (33 endpoints)

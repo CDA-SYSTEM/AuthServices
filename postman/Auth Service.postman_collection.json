@@ -834,7 +834,7 @@
       }
     },
     {
-      "name": "19 - List Roles (ADMIN/MANAGER)",
+      "name": "19 - List Roles",
       "request": {
         "method": "GET",
         "header": [
@@ -871,7 +871,7 @@
       }
     },
     {
-      "name": "20 - List Identification Types (ADMIN/MANAGER)",
+      "name": "20 - List Identification Types",
       "request": {
         "method": "GET",
         "header": [
@@ -925,13 +925,13 @@
       }
     },
     {
-      "name": "22 - Delete User (ADMIN)",
+      "name": "22 - Delete User",
       "request": {
         "method": "DELETE",
         "header": [
           {
             "key": "Authorization",
-            "value": "Bearer {{adminAccessToken}}"
+            "value": "Bearer {{superadminAccessToken}}"
           },
           {
             "key": "x-api-key",
@@ -947,6 +947,42 @@
             "auth",
             "users",
             "{{operarioId}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "22b - Change User Role (SUPERADMIN)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{superadminAccessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"role\": \"inspector\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/users/{{operarioId}}/role",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "users",
+            "{{operarioId}}",
+            "role"
           ]
         }
       }
@@ -1182,6 +1218,41 @@
           "path": [
             "cache",
             "{{cacheKey}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "29 - Update Role (SUPERADMIN)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{superadminAccessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{apiKey}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"scope\": \"Control Total del Sistema\",\n  \"permissions\": \"Gestion de administradores, configuracion global, auditoria completa.\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/roles/admin",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "roles",
+            "admin"
           ]
         }
       }
