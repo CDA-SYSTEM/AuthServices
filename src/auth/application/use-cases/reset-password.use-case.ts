@@ -16,8 +16,8 @@ export class ResetPasswordUseCase {
   ) {}
 
   async execute(authAccountId: string, dto: ResetPasswordDto, requestingUserRole: UserRole): Promise<{ message: string }> {
-    if (requestingUserRole !== UserRole.ADMIN && requestingUserRole !== UserRole.MANAGER) {
-      throw new ForbiddenException('Solo ADMIN o MANAGER pueden restablecer contraseñas');
+    if (requestingUserRole !== UserRole.SUPERADMIN && requestingUserRole !== UserRole.ADMIN && requestingUserRole !== UserRole.MANAGER) {
+      throw new ForbiddenException('Solo SUPERADMIN, ADMIN o MANAGER pueden restablecer contraseñas');
     }
 
     const account = await this.authAccountRepository.findById(authAccountId);

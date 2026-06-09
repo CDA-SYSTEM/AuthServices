@@ -35,12 +35,15 @@ src/
 
 ## Reglas de negocio
 
-| Rol | Permisos |
-|-----|----------|
-| ADMIN | Control total: CRUD usuarios, reset passwords, registro personal |
-| MANAGER | Consulta, busqueda, inactivacion, reset passwords |
-| INSPECTOR | Acceso a modulo checklists NTC 5375 |
-| OPERARIO | Acceso a modulo recepcion |
+| Rol | Nivel | Permisos |
+|-----|-------|----------|
+| SUPERADMIN | 5 | Control total del sistema: gestion de administradores, configuracion global, auditoria completa |
+| ADMIN | 4 | Control total: CRUD usuarios, reset passwords, registro personal |
+| MANAGER | 3 | Consulta, busqueda, inactivacion, reset passwords |
+| INSPECTOR | 2 | Acceso a modulo checklists NTC 5375 |
+| OPERARIO | 1 | Acceso a modulo recepcion |
+
+Los roles heredan permisos de niveles inferiores via `ROLE_HIERARCHY`.
 
 Restricciones:
 - Solo ADMIN puede registrar personal y actualizar/eliminar usuarios
@@ -57,6 +60,7 @@ Prefijo global: `/api`
 | Método | Ruta | Descripción |
 |--------|------|-------------|
 | POST | `/auth/login` | Iniciar sesion (email + password) |
+| POST | `/auth/oauth/google` | Iniciar sesion o registrarse con Google (ID token) |
 | POST | `/auth/refresh` | Refrescar token JWT |
 | POST | `/auth/logout` | Cerrar sesion (invalida refresh token) |
 | POST | `/auth/validate-token` | Validar access token |
@@ -77,7 +81,8 @@ Prefijo global: `/api`
 | GET | `/auth/users/:id` | Detalle de usuario | ADMIN, MANAGER |
 | PATCH | `/auth/users/:id` | Actualizar usuario | ADMIN |
 | PATCH | `/auth/users/:id/inactivate` | Desactivar usuario | ADMIN, MANAGER |
-| DELETE | `/auth/users/:id` | Soft-delete usuario | ADMIN |
+| PATCH | `/auth/users/:id/role` | Cambiar rol de usuario | SUPERADMIN |
+| DELETE | `/auth/users/:id` | Soft-delete usuario | SUPERADMIN, ADMIN, MANAGER |
 
 ### Dropdowns (JWT)
 
@@ -99,8 +104,9 @@ Prefijo global: `/api`
 
 | Método | Ruta | Descripción | Roles |
 |--------|------|-------------|-------|
-| GET | `/auth/roles` | Listar roles del sistema | ADMIN, MANAGER |
-| GET | `/auth/identification-types` | Listar tipos de identificacion | ADMIN, MANAGER |
+| GET | `/auth/roles` | Listar roles del sistema | SUPERADMIN, ADMIN, MANAGER |
+| PATCH | `/auth/roles/:code` | Actualizar alcance y permisos de un rol | SUPERADMIN |
+| GET | `/auth/identification-types` | Listar tipos de identificacion | SUPERADMIN, ADMIN, MANAGER |
 
 ### Acceso a Módulos (JWT)
 
@@ -145,6 +151,7 @@ Prefijo global: `/api`
 ### Cuentas semilla
 | Email | Password | Rol |
 |-------|----------|-----|
+| superadmin@example.com | 1234 | SUPERADMIN |
 | admin@example.com | 1234 | ADMIN |
 | manager@example.com | 1234 | MANAGER |
 | inspector@example.com | 1234 | INSPECTOR |
@@ -169,22 +176,49 @@ npm run migration:revert # Revertir ultima
 ## Variables de Entorno (.env)
 
 ```
+NODE_ENV=development
+PORT=3001
 API_KEY=change-me-to-a-secure-api-key
-JWT_ACCESS_SECRET=...
-JWT_REFRESH_SECRET=...
-JWT_ACCESS_EXPIRATION=15m
-JWT_REFRESH_EXPIRATION=7d
+JWT_ACCESS_SECRET=access-secret-change-me-minimum-16-characters
+JWT_REFRESH_SECRET=refresh-secret-change-me-minimum-16-characters
+JWT_ACCESS_TTL=15m
+JWT_REFRESH_TTL=7d
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+REDIS_PASSWORD=
+REDIS_DB=0
+REDIS_TLS_ENABLED=false
 DB_HOST=localhost
 DB_PORT=5432
-DB_USERNAME=postgres
-DB_PASSWORD=...
-DB_NAME=auth_service
-REDIS_HOST=localhost
-REDIS_PORT=6379
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_NAME=auth_db
+DB_LOGGING=false
+GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 ```
+
+## OAuth 2.0 con Google
+
+### Flujo
+1. El frontend obtiene un `credential` (ID token) via Google Sign-In (GIS/GSI)
+2. Envia `POST /auth/oauth/google` con `{ "id_token": "<token>" }`
+3. El backend verifica el token con `google-auth-library` (firma, audiencia, expiracion)
+4. **Usuario nuevo**: crea `AuthAccount` + `User` con rol OPERARIO y datos del perfil de Google
+5. **Usuario existente**: emite JWT directamente (respeta el rol actual)
+6. Devuelve el mismo `{ accessToken, refreshToken }` que el login con password
+
+### Desarrollo local
+En `NODE_ENV=development`, si el `id_token` contiene un `@`, se trata como email directo (sin verificar con Google). Ejemplo:
+```json
+{ "id_token": "superadmin@example.com" }
+```
+
+### Requisitos
+- `GOOGLE_CLIENT_ID` configurado en `.env`
+- El cliente OAuth debe estar configurado en Google Cloud Console y verificado (o usar cuentas de prueba)
 
 ## Documentacion
 
 - `USER_MANAGEMENT_GUIDE.md` — Guia funcional de gestion de usuarios
 - `MIGRATION_SETUP.md` — Instalacion rapida de migraciones
-- `postman/Auth Service.postman_collection.json` — Coleccion Postman (28 endpoints)
+- `postman/Auth Service.postman_collection.json` — Coleccion Postman (33 endpoints)

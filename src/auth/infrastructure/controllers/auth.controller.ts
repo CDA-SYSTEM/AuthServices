@@ -30,6 +30,10 @@ import { ErrorResponseDto } from '../../../common/domain/dto/error-response.dto'
 import { ChangePasswordDto } from '../../domain/dto/change-password.dto';
 import { ChangePasswordUseCase } from '../../application/use-cases/change-password.use-case';
 import { AUTH_ACCOUNT_REPOSITORY, AuthAccountRepositoryPort } from '../../domain/ports/auth-account-repository.port';
+import { UpdateUserRoleUseCase } from '../../application/use-cases/update-user-role.use-case';
+import { UpdateUserRoleDto } from '../../domain/dto/update-user-role.dto';
+import { UpdateRoleUseCase } from '../../application/use-cases/update-role.use-case';
+import { UpdateRoleDto } from '../../domain/dto/update-role.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -45,6 +49,8 @@ export class AuthController {
     private readonly getRolesUseCase: GetRolesUseCase,
     private readonly getIdentificationTypesUseCase: GetIdentificationTypesUseCase,
     private readonly changePasswordUseCase: ChangePasswordUseCase,
+    private readonly updateUserRoleUseCase: UpdateUserRoleUseCase,
+    private readonly updateRoleUseCase: UpdateRoleUseCase,
     @Inject(AUTH_ACCOUNT_REPOSITORY)
     private readonly authAccountRepository: AuthAccountRepositoryPort,
   ) {}
@@ -133,6 +139,55 @@ export class AuthController {
   })
   login(@Body() dto: LoginDto): Promise<TokenPairResponseDto> {
     return this.authService.login(dto);
+  }
+
+  @Post('oauth/google')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Iniciar sesion o registrarse con Google OAuth 2.0',
+    description:
+      'Autentica o registra mediante Google ID token. El frontend debe obtener un id_token de Google Sign-In y enviarlo en el body. Si el email no existe en auth_accounts, se crea una cuenta nueva con rol OPERARIO y un registro en la tabla users con los datos del perfil de Google. Si ya existe, emite el JWT del sistema.',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { id_token: { type: 'string', example: 'eyJhbGciOiJSUzI1NiIs...' } },
+      required: ['id_token'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Sesion iniciada correctamente con Google',
+    type: TokenPairResponseDto,
+    content: {
+      'application/json': {
+        example: {
+          accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4ZjFkMGUyYy04ZDY5LTRiZTItYTFmMi0yYjVhZDQ5N2Y0NGEiLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3MTU4NjYwMDAsImV4cCI6MTcxNTg2OTYwMH0.signature',
+          refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4ZjFkMGUyYy04ZDY5LTRiZTItYTFmMi0yYjVhZDQ5N2Y0NGEiLCJ0eXBlIjoicmVmcmVzaCIsImlhdCI6MTcxNTg2NjAwMCwiZXhwIjoxNzE4NDU4MDAwfQ.signature',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Token de Google invalido o sin correo',
+    content: {
+      'application/json': {
+        examples: {
+          invalidToken: {
+            summary: 'Token de Google invalido',
+            value: { statusCode: 401, message: 'Token de Google invalido', error: 'Unauthorized' },
+          },
+          noEmail: {
+            summary: 'Token sin correo',
+            value: { statusCode: 401, message: 'El token de Google no contiene un correo valido', error: 'Unauthorized' },
+          },
+        },
+      },
+    },
+  })
+  async oauthGoogle(@Body('id_token') idToken: string): Promise<TokenPairResponseDto> {
+    return this.authService.oauthLoginByGoogle(idToken);
   }
 
   @Post('refresh')
@@ -521,6 +576,81 @@ export class AuthController {
     return this.deleteUserUseCase.execute(id, req.user.role);
   }
 
+  @Patch('users/:id/role')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.SUPERADMIN)
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('bearer')
+  @ApiOperation({
+    summary: 'Cambiar rol de un usuario',
+    description: 'Solo SUPERADMIN puede cambiar el rol de cualquier usuario del sistema.',
+  })
+  @ApiParam({ name: 'id', description: 'Identificador unico del usuario' })
+  @ApiBody({ type: UpdateUserRoleDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Rol actualizado correctamente',
+    type: UserResponseDto,
+    content: {
+      'application/json': {
+        example: {
+          id: '8f1d0e2c-8d69-4be2-a1f2-2b5ad497f44a',
+          identificationType: 'cc',
+          identificationNumber: '123456789',
+          firstName: 'Laura',
+          lastName: 'Inspectora',
+          phoneNumber: '3001234567',
+          email: 'laura@example.com',
+          role: 'inspector',
+          isActive: true,
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 403, description: 'Solo SUPERADMIN puede cambiar roles' })
+  async updateUserRole(
+    @Param('id') id: string,
+    @Body() dto: UpdateUserRoleDto,
+    @Request() req: any,
+  ): Promise<User> {
+    return this.updateUserRoleUseCase.execute(id, dto.role, req.user.role);
+  }
+
+  @Patch('roles/:code')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.SUPERADMIN)
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('bearer')
+  @ApiOperation({
+    summary: 'Actualizar permisos y alcance de un rol',
+    description: 'Solo SUPERADMIN puede modificar la descripcion de alcance y permisos de un rol del sistema.',
+  })
+  @ApiParam({ name: 'code', description: 'Codigo del rol (superadmin, admin, manager, inspector, operario)' })
+  @ApiBody({ type: UpdateRoleDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Rol actualizado correctamente',
+    type: RoleResponseDto,
+    content: {
+      'application/json': {
+        example: {
+          id: 'uuid',
+          code: 'admin',
+          scope: 'Control Total del Sistema',
+          permissions: 'Gestion de usuarios, configuracion global, auditoria completa.',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 403, description: 'Solo SUPERADMIN puede editar roles' })
+  async updateRole(
+    @Param('code') code: string,
+    @Body() dto: UpdateRoleDto,
+    @Request() req: any,
+  ): Promise<Role> {
+    return this.updateRoleUseCase.execute(code as any, dto, req.user.role);
+  }
+
   @Get('modules/ntc-5375/checklists')
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.INSPECTOR)
@@ -555,7 +685,7 @@ export class AuthController {
 
   @Get('roles')
   @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @Roles(UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.MANAGER)
   @ApiBearerAuth('bearer')
   @ApiOperation({
     summary: 'Listar roles disponibles',
@@ -591,7 +721,7 @@ export class AuthController {
 
   @Get('identification-types')
   @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @Roles(UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.MANAGER)
   @ApiBearerAuth('bearer')
   @ApiOperation({
     summary: 'Listar tipos de identificacion disponibles',

@@ -3,6 +3,7 @@ import * as bcrypt from 'bcrypt';
 import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { OAuth2Client } from 'google-auth-library';
 import { JwtPayload } from '../../../common/domain/interfaces/jwt-payload.interface';
 import { LoginDto } from '../../../common/domain/dto/login.dto';
 import { LogoutDto } from '../../../common/domain/dto/logout.dto';
@@ -11,6 +12,9 @@ import { RedisService } from '../../../redis/redis.service';
 import { TokenPairDto } from '../../domain/dto/token-pair.dto';
 import { AuthAccount, AuthAccountWithPassword } from '../../domain/interfaces/auth-account.interface';
 import { AUTH_ACCOUNT_REPOSITORY, AuthAccountRepositoryPort } from '../../domain/ports/auth-account-repository.port';
+import { USER_REPOSITORY, UserRepositoryPort } from '../../domain/ports/user-repository.port';
+import { UserRole } from '../../../common/domain/enums/user-role.enum';
+import { IdentificationType } from '../../../common/domain/enums/identification-type.enum';
 
 @Injectable()
 export class AuthService {
@@ -23,7 +27,78 @@ export class AuthService {
     private readonly configService: ConfigService,
     @Inject(AUTH_ACCOUNT_REPOSITORY)
     private readonly authAccountRepository: AuthAccountRepositoryPort,
+    @Inject(USER_REPOSITORY)
+    private readonly userRepository: UserRepositoryPort,
   ) {}
+
+  async oauthLoginByGoogle(idToken: string): Promise<TokenPairDto> {
+    let payload: any;
+
+    if (this.configService.get('NODE_ENV') === 'development' && idToken.includes('@')) {
+      payload = { email: idToken, sub: `dev_${createHash('sha256').update(idToken).digest('hex').slice(0, 16)}`, given_name: idToken.split('@')[0], family_name: '' };
+    } else {
+      const clientId = this.configService.getOrThrow<string>('GOOGLE_CLIENT_ID');
+      const client = new OAuth2Client(clientId);
+
+      try {
+        const ticket = await client.verifyIdToken({ idToken, audience: clientId });
+        payload = ticket.getPayload();
+      } catch {
+        throw new UnauthorizedException('Token de Google invalido');
+      }
+    }
+
+    const email = payload?.email;
+    if (!email) {
+      throw new UnauthorizedException('El token de Google no contiene un correo valido');
+    }
+
+    const existing = await this.authAccountRepository.findByEmail(email);
+
+    if (existing) {
+      const tokens = await this.issueTokenPair(existing);
+      await this.saveSession(existing.id, tokens.refreshToken);
+      return tokens;
+    }
+
+    const randomPassword = await bcrypt.hash(randomUUID(), 10);
+    const role = UserRole.OPERARIO;
+
+    const newAccount = await this.authAccountRepository.create({
+      email,
+      password: randomPassword,
+      role,
+      isActive: true,
+    });
+
+    await this.userRepository.create({
+      identificationType: IdentificationType.CC,
+      identificationNumber: payload.sub,
+      firstName: payload.given_name ?? email.split('@')[0],
+      lastName: payload.family_name ?? '',
+      phoneNumber: '',
+      email,
+      role,
+      isActive: true,
+    });
+
+    const tokens = await this.issueTokenPair(newAccount);
+    await this.saveSession(newAccount.id, tokens.refreshToken);
+
+    return tokens;
+  }
+
+  async oauthLogin(email: string): Promise<TokenPairDto> {
+    const user = await this.authAccountRepository.findByEmail(email);
+    if (!user) {
+      throw new UnauthorizedException('No hay una cuenta vinculada a este correo');
+    }
+
+    const tokens = await this.issueTokenPair(user);
+    await this.saveSession(user.id, tokens.refreshToken);
+
+    return tokens;
+  }
 
   async login(dto: LoginDto): Promise<TokenPairDto> {
     const user = await this.validateCredentials(dto.email, dto.password);

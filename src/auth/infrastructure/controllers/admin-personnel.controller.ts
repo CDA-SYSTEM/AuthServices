@@ -156,7 +156,7 @@ export class AdminPersonnelController {
   @ApiBearerAuth('bearer')
   @ApiOperation({
     summary: 'Restablecer contraseña de una cuenta',
-    description: 'Permite a ADMIN o MANAGER restablecer la contraseña de cualquier cuenta de autenticacion.',
+    description: 'Permite a SUPERADMIN, ADMIN o MANAGER restablecer la contraseña de cualquier cuenta de autenticacion.',
   })
   @ApiParam({ name: 'id', description: 'ID de la cuenta de autenticacion (auth_account)' })
   @ApiBody({ type: ResetPasswordDto })

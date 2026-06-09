@@ -81,6 +81,7 @@ jobs:
               -e API_KEY="${{ secrets.API_KEY }}" \
               -e DB_NAME="${{ secrets.DB_NAME }}" \
               -e DB_LOGGING="${{ secrets.DB_LOGGING }}" \
+              -e GOOGLE_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID }}" \
               --restart unless-stopped \
               ghcr.io/${{ env.REPO_LC }}:latest
 
