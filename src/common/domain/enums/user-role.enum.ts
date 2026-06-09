@@ -1,4 +1,5 @@
 export enum UserRole {
+  SUPERADMIN = 'superadmin',
   ADMIN = 'admin',
   MANAGER = 'manager',
   OPERARIO = 'operario',
@@ -6,6 +7,7 @@ export enum UserRole {
 }
 
 export const ROLE_HIERARCHY: Record<UserRole, number> = {
+  [UserRole.SUPERADMIN]: 5,
   [UserRole.ADMIN]: 4,
   [UserRole.MANAGER]: 3,
   [UserRole.INSPECTOR]: 2,
