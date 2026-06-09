@@ -22,7 +22,7 @@ export class UserEntity {
   @JoinColumn({ name: 'identification_type_id' })
   identificationType!: IdentificationTypeEntity;
 
-  @Column({ type: 'varchar', length: 20, unique: true })
+  @Column({ type: 'varchar', length: 50, unique: true })
   identificationNumber!: string;
 
   @Column({ type: 'varchar', length: 100 })
