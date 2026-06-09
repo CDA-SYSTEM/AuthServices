@@ -16,4 +16,5 @@ export interface AuthAccountRepositoryPort {
   findByEmail(email: string): Promise<AuthAccountWithPassword | null>;
   create(data: CreateAuthAccountData): Promise<AuthAccount>;
   updatePassword(id: string, hashedPassword: string): Promise<void>;
+  updateRole(id: string, roleCode: UserRole): Promise<void>;
 }

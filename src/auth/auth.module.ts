@@ -34,6 +34,7 @@ import { ResetPasswordUseCase } from './application/use-cases/reset-password.use
 import { GetAuthAccountsUseCase } from './application/use-cases/get-auth-accounts.use-case';
 import { UpdateUserRoleUseCase } from './application/use-cases/update-user-role.use-case';
 import { UpdateRoleUseCase } from './application/use-cases/update-role.use-case';
+import { UpdateAuthAccountRoleUseCase } from './application/use-cases/update-auth-account-role.use-case';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { UpdateRoleUseCase } from './application/use-cases/update-role.use-case'
     GetAuthAccountsUseCase,
     UpdateUserRoleUseCase,
     UpdateRoleUseCase,
+    UpdateAuthAccountRoleUseCase,
     UserSeedService,
     RolesGuard,
     UserRepositoryAdapter,

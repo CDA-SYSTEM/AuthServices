@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AuthAccountRepositoryPort, CreateAuthAccountData } from '../../domain/ports/auth-account-repository.port';
 import { AuthAccount, AuthAccountWithPassword } from '../../domain/interfaces/auth-account.interface';
+import { UserRole } from '../../../common/domain/enums/user-role.enum';
 import { AuthAccountEntity } from './entities/auth-account.entity';
 import { RoleEntity } from './entities/role.entity';
 
@@ -55,6 +56,14 @@ export class AuthAccountRepositoryAdapter implements AuthAccountRepositoryPort {
 
   async updatePassword(id: string, hashedPassword: string): Promise<void> {
     await this.authAccountRepository.update(id, { password: hashedPassword });
+  }
+
+  async updateRole(id: string, roleCode: UserRole): Promise<void> {
+    const roleEntity = await this.roleRepository.findOne({ where: { code: roleCode } });
+    if (!roleEntity) {
+      throw new Error(`Rol ${roleCode} no configurado`);
+    }
+    await this.authAccountRepository.update(id, { role: roleEntity });
   }
 
   private mapToAuthAccount(entity: AuthAccountEntity): AuthAccount {

@@ -14,6 +14,8 @@ import { AuthAccount } from '../../domain/interfaces/auth-account.interface';
 import { ErrorResponseDto } from '../../../common/domain/dto/error-response.dto';
 import { ResetPasswordDto } from '../../domain/dto/reset-password.dto';
 import { ResetPasswordUseCase } from '../../application/use-cases/reset-password.use-case';
+import { UpdateAuthAccountRoleDto } from '../../domain/dto/update-auth-account-role.dto';
+import { UpdateAuthAccountRoleUseCase } from '../../application/use-cases/update-auth-account-role.use-case';
 
 @ApiTags('Admin Personnel')
 @Controller('admin/personnel')
@@ -22,6 +24,7 @@ export class AdminPersonnelController {
     private readonly registerUserUseCase: RegisterUserUseCase,
     private readonly resetPasswordUseCase: ResetPasswordUseCase,
     private readonly getAuthAccountsUseCase: GetAuthAccountsUseCase,
+    private readonly updateAuthAccountRoleUseCase: UpdateAuthAccountRoleUseCase,
   ) {}
 
   @Get('auth-accounts')
@@ -204,5 +207,28 @@ export class AdminPersonnelController {
     @Request() req: any,
   ): Promise<{ message: string }> {
     return this.resetPasswordUseCase.execute(id, dto, req.user.role);
+  }
+
+  @Patch(':id/role')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.SUPERADMIN, UserRole.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('bearer')
+  @ApiOperation({
+    summary: 'Cambiar rol de una cuenta de autenticacion',
+    description: 'Permite a SUPERADMIN o ADMIN cambiar el rol de cualquier cuenta de autenticacion.',
+  })
+  @ApiParam({ name: 'id', description: 'ID de la cuenta de autenticacion (auth_account)' })
+  @ApiBody({ type: UpdateAuthAccountRoleDto })
+  @ApiResponse({ status: 200, description: 'Rol actualizado correctamente' })
+  @ApiResponse({ status: 400, description: 'Datos invalidos' })
+  @ApiResponse({ status: 401, description: 'No autenticado o API key invalida' })
+  @ApiResponse({ status: 404, description: 'Cuenta no encontrada' })
+  async updateRole(
+    @Param('id') id: string,
+    @Body() dto: UpdateAuthAccountRoleDto,
+    @Request() req: any,
+  ): Promise<{ message: string }> {
+    return this.updateAuthAccountRoleUseCase.execute(id, dto, req.user.role);
   }
 }
